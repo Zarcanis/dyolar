@@ -37,10 +37,13 @@
       margin-left: 0.5em;
     }
     .fake-chart {
+      display: none;
+    }
+    .small-chart {
+      max-width: 300px;
       width: 100%;
-      height: 200px;
-      background: linear-gradient(to right, #111, gold, #111);
-      margin: 1em 0;
+      height: 120px;
+      margin: 0 auto;
     }
     .airdrop {
       background: #222;
@@ -79,41 +82,42 @@
     <h2>Cours actuel du $DYOLAR</h2>
     <p class="price">1 DYOLAR = <span id="dyoprice">3.14</span> UPP* <span class="change">+2.21 (+237.58%)</span></p>
     
-    <div class="fake-chart"></div>  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p><canvas id="dyolarChart" width="400" height="200"></canvas>
-<script>
-  const ctx = document.getElementById('dyolarChart').getContext('2d');
+    <canvas id="dyolarChart" class="small-chart"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      const ctx = document.getElementById('dyolarChart').getContext('2d');
 
-  const dyolarChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-      datasets: [{
-        label: 'Cours du DYOLAR',
-        data: [1.1, 2.3, 2.9, 3.0, 3.2, 5.1, 5.35],
-        backgroundColor: 'rgba(255, 215, 0, 0.2)',
-        borderColor: 'gold',
-        borderWidth: 2,
-        pointBackgroundColor: 'white'
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: false
-        }
-      },
-      plugins: {
-        legend: {
-          labels: {
-            color: 'gold'
+      const dyolarChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+          datasets: [{
+            label: 'Cours du DYOLAR',
+            data: [1.1, 2.3, 2.9, 3.0, 3.2, 5.1, 5.35],
+            backgroundColor: 'rgba(255, 215, 0, 0.2)',
+            borderColor: 'gold',
+            borderWidth: 2,
+            pointBackgroundColor: 'white'
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: 'gold'
+              }
+            }
           }
         }
-      }
-    }
-  });
-</script>
+      });
+    </script>
 
+    <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p>
   </div>
 
   <div class="section airdrop">
@@ -131,7 +135,7 @@
   </div>
 
   <footer>
-   *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
   </footer>
 
   <script>
@@ -147,7 +151,5 @@
       msg.style.color = "gold";
     }
   </script>
-
-
 </body>
 </html>
