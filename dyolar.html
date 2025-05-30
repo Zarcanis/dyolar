@@ -80,7 +80,40 @@
     <p class="price">1 DYOLAR = <span id="dyoprice">3.14</span> UPP* <span class="change">+2.21 (+237.58%)</span></p>
     
     <div class="fake-chart"></div>
-    <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p>
+    <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p><canvas id="dyolarChart" width="400" height="200"></canvas>
+<script>
+  const ctx = document.getElementById('dyolarChart').getContext('2d');
+
+  const dyolarChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+      datasets: [{
+        label: 'Cours du DYOLAR',
+        data: [1.1, 2.3, 2.9, 3.0, 3.2, 5.1, 5.35],
+        backgroundColor: 'rgba(255, 215, 0, 0.2)',
+        borderColor: 'gold',
+        borderWidth: 2,
+        pointBackgroundColor: 'white'
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: false
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: 'gold'
+          }
+        }
+      }
+    }
+  });
+</script>
+
   </div>
 
   <div class="section airdrop">
@@ -114,5 +147,7 @@
       msg.style.color = "gold";
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </body>
 </html>
