@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DYOLAR - La Monnaie Sacrée</title>
   <style>
     body {
@@ -36,14 +36,11 @@
       font-size: 0.8em;
       margin-left: 0.5em;
     }
-    .fake-chart {
-      display: none;
-    }
-    .small-chart {
-      max-width: 300px;
-      width: 100%;
-      height: 120px;
-      margin: 0 auto;
+    #dyolarChart {
+      max-width: 400px;
+      max-height: 200px;
+      margin: 1em auto;
+      display: block;
     }
     .airdrop {
       background: #222;
@@ -59,6 +56,10 @@
       cursor: pointer;
       font-size: 1em;
       margin-top: 1em;
+      transition: opacity 0.3s ease;
+    }
+    .btn:hover {
+      opacity: 0.8;
     }
     .testimonials {
       font-style: italic;
@@ -70,9 +71,39 @@
       font-size: 0.9em;
       color: #999;
     }
+    /* Panneau admin */
+    #adminPanel {
+      max-width: 400px;
+      background: #111;
+      border: 2px solid gold;
+      padding: 1.5em;
+      margin: 2em auto;
+      display: none;
+      text-align: left;
+      border-radius: 8px;
+    }
+    #adminPanel h2 {
+      color: gold;
+      margin-top: 0;
+      text-align: center;
+    }
+    #adminPanel input[type=number] {
+      width: 100%;
+      padding: 0.5em;
+      font-size: 1em;
+      margin-top: 0.5em;
+      border-radius: 4px;
+      border: none;
+      outline: none;
+    }
+    #adminMsg {
+      margin-top: 1em;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
+
   <header>
     <h1>💰 DYOLAR : La Crypto-monnaie du DYOLISSIME</h1>
     <p>Rejoins la COMMU des Crypto BROS !</p>
@@ -80,43 +111,11 @@
 
   <div class="section">
     <h2>Cours actuel du $DYOLAR</h2>
-    <p class="price">1 DYOLAR = <span id="dyoprice">3.14</span> UPP* <span class="change">+2.21 (+237.58%)</span></p>
-    
-    <canvas id="dyolarChart" class="small-chart"></canvas>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-      const ctx = document.getElementById('dyolarChart').getContext('2d');
-
-      const dyolarChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-          datasets: [{
-            label: 'Cours du DYOLAR',
-            data: [1.1, 2.3, 2.9, 3.0, 3.2, 5.1, 5.35],
-            backgroundColor: 'rgba(255, 215, 0, 0.2)',
-            borderColor: 'gold',
-            borderWidth: 2,
-            pointBackgroundColor: 'white'
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: false
-            }
-          },
-          plugins: {
-            legend: {
-              labels: {
-                color: 'gold'
-              }
-            }
-          }
-        }
-      });
-    </script>
-
+    <p class="price">
+      1 DYOLAR = <span id="dyoprice">3.14</span> UPP*
+      <span class="change" id="priceChange">+0.00 (+0.00%)</span>
+    </p>
+    <canvas id="dyolarChart" width="400" height="200"></canvas>
     <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p>
   </div>
 
@@ -124,7 +123,7 @@
     <h2>🔥 Airdrop Sacré !</h2>
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
     <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <br>
+    <br />
     <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
     <p id="claimMsg"></p>
   </div>
@@ -134,11 +133,111 @@
     <p>"Ma poule m’a dit d’acheter encore." — @ProphBRO</p>
   </div>
 
+  <!-- Panneau admin caché -->
+  <div id="adminPanel">
+    <h2>🛐 Intervention Divine</h2>
+    <p>Modifier le cours de base du DYOLAR :</p>
+    <input type="number" id="newBasePrice" step="0.01" placeholder="Nouveau prix de base" />
+    <button class="btn" onclick="updateBasePrice()">Appliquer</button>
+    <p id="adminMsg"></p>
+  </div>
+
   <footer>
     *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // Variables globales pour gérer le cours et l'historique
+    let basePrice = 3.14;       // Prix de base modifiable manuellement
+    let currentPrice = basePrice;
+    let previousPrice = basePrice;
+    let priceHistory = [basePrice];
+    let timeLabels = ['Début'];
+
+    // Initialisation du graphique
+    const ctx = document.getElementById('dyolarChart').getContext('2d');
+    const dyolarChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: timeLabels,
+        datasets: [{
+          label: 'Cours du DYOLAR',
+          data: priceHistory,
+          backgroundColor: 'rgba(255, 215, 0, 0.2)',
+          borderColor: 'gold',
+          borderWidth: 2,
+          pointBackgroundColor: 'white',
+          fill: true,
+          tension: 0.2
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: {
+              color: 'gold'
+            },
+            grid: {
+              color: '#333'
+            }
+          },
+          x: {
+            ticks: {
+              color: 'gold'
+            },
+            grid: {
+              color: '#333'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: 'gold'
+            }
+          }
+        }
+      }
+    });
+
+    // Mise à jour de l'affichage prix + graphique
+    function updateDisplay() {
+      // Calcul variation
+      let diff = currentPrice - previousPrice;
+      let pct = (diff / previousPrice) * 100;
+
+      // Mise à jour texte prix
+      document.getElementById('dyoprice').innerText = currentPrice.toFixed(2);
+      const changeEl = document.getElementById('priceChange');
+      const sign = diff >= 0 ? "+" : "-";
+      changeEl.innerText = `${sign}${Math.abs(diff).toFixed(2)} (${sign}${Math.abs(pct).toFixed(2)}%)`;
+      changeEl.style.color = diff >= 0 ? 'lightgreen' : 'crimson';
+
+      // Mise à jour graphique
+      priceHistory.push(currentPrice);
+      let now = new Date();
+      timeLabels.push(now.toLocaleTimeString());
+      dyolarChart.update();
+
+      // Prépare pour prochaine comparaison
+      previousPrice = currentPrice;
+    }
+
+    // Fluctuations automatiques très légères toutes les 30 secondes
+    function minorFluctuation() {
+      // Fluctuation entre -0.05% et +0.05%
+      const fluctuationPct = (Math.random() * 0.1) - 0.05;
+      const change = currentPrice * (fluctuationPct / 100);
+      currentPrice += change;
+      updateDisplay();
+    }
+
+    // Intervalle fluctuation automatique
+    setInterval(minorFluctuation, 30000);
+
+    // Fonction claim airdrop (inchangée)
     function claimAirdrop() {
       const pseudo = document.getElementById('pseudo').value.trim();
       const msg = document.getElementById('claimMsg');
@@ -150,6 +249,60 @@
       msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🛐`;
       msg.style.color = "gold";
     }
+
+    // Panneau admin caché accessible via code clavier
+    const secretCode = 'DYOLISECRET';
+    let typedKeys = '';
+
+    window.addEventListener('keydown', (e) => {
+      typedKeys += e.key.toUpperCase();
+      if (typedKeys.length > secretCode.length) {
+        typedKeys = typedKeys.slice(-secretCode.length);
+      }
+      if (typedKeys === secretCode) {
+        toggleAdmin();
+        typedKeys = '';
+      }
+    });
+
+    function toggleAdmin() {
+      const panel = document.getElementById('adminPanel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Modifier le prix de base depuis le panneau admin
+    function updateBasePrice() {
+      const input = document.getElementById('newBasePrice');
+      const newPrice = parseFloat(input.value);
+
+      if (isNaN(newPrice) || newPrice <= 0) {
+        document.getElementById('adminMsg').innerText = "Valeur invalide, ô Discipulus.";
+        document.getElementById('adminMsg').style.color = "crimson";
+        return;
+      }
+
+      basePrice = newPrice;
+      currentPrice = newPrice;
+      previousPrice = newPrice;
+
+      // Réinitialise historique et graphique
+      priceHistory = [newPrice];
+      timeLabels = ['Début'];
+      dyolarChart.data.labels = timeLabels;
+      dyolarChart.data.datasets[0].data = priceHistory;
+      dyolarChart.update();
+
+      // Mise à jour texte prix et variation à zéro
+      document.getElementById('dyoprice').innerText = currentPrice.toFixed(2);
+      const changeEl = document.getElementById('priceChange');
+      changeEl.innerText = "+0.00 (+0.00%)";
+      changeEl.style.color = 'lightgreen';
+
+      document.getElementById('adminMsg').innerText = `Base du DYOLAR modifiée : ${newPrice.toFixed(2)} UPP.`;
+      document.getElementById('adminMsg').style.color = "gold";
+      input.value = '';
+    }
   </script>
+
 </body>
 </html>
