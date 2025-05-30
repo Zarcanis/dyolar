@@ -98,17 +98,23 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Récupération des données dans localStorage ou initialisation
+    // Données persistées
     let priceHistory = JSON.parse(localStorage.getItem('dyolarPriceHistory')) || [3.14];
     let lastManualChangeTime = localStorage.getItem('dyolarLastManualChange') 
                                ? parseInt(localStorage.getItem('dyolarLastManualChange')) 
                                : Date.now();
+    let lastChartUpdateTime = localStorage.getItem('dyolarLastChartUpdate')
+                              ? parseInt(localStorage.getItem('dyolarLastChartUpdate'))
+                              : Date.now();
+
+    // Valeur courante pour fluctuations en temps réel (hors graphique)
+    let currentLivePrice = priceHistory[priceHistory.length - 1];
 
     const ctx = document.getElementById('dyolarChart').getContext('2d');
     const dyolarChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: priceHistory.map((_, i) => i), // labels arbitraires (index)
+        labels: priceHistory.map((_, i) => i),
         datasets: [{
           label: 'Cours du DYOLAR',
           data: priceHistory,
@@ -130,81 +136,80 @@
       }
     });
 
-    function updateDisplay() {
-      const currentPrice = priceHistory[priceHistory.length - 1];
+    // Met à jour uniquement l'affichage du prix et changement à l'écran
+    function updateDisplayLivePrice() {
       const basePrice = priceHistory[0];
-      const changeAmount = currentPrice - basePrice;
+      const changeAmount = currentLivePrice - basePrice;
       const changePercent = ((changeAmount / basePrice) * 100).toFixed(2);
 
-      document.getElementById('dyoprice').textContent = currentPrice.toFixed(2);
+      document.getElementById('dyoprice').textContent = currentLivePrice.toFixed(2);
 
       const changeSpan = document.querySelector('.change');
       changeSpan.textContent = `${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)} (${changePercent}%)`;
       changeSpan.style.color = changeAmount >= 0 ? 'lightgreen' : 'crimson';
     }
 
-    function saveHistory() {
-      localStorage.setItem('dyolarPriceHistory', JSON.stringify(priceHistory));
-      localStorage.setItem('dyolarLastManualChange', lastManualChangeTime.toString());
+    // Met à jour le graphique avec le dernier prix "officiel"
+    function refreshChart() {
+      dyolarChart.data.labels = priceHistory.map((_, i) => i);
+      dyolarChart.data.datasets[0].data = priceHistory;
+      dyolarChart.update('none');
     }
 
+    // Ajoute un nouveau prix manuel "fort" avec interpolation pour le graphique
     function addPriceManual(newPrice) {
       const now = Date.now();
-      // On ajoute le prix avec "poids" plus grand (plusieurs valeurs intermédiaires)
       const lastPrice = priceHistory[priceHistory.length - 1];
-      const steps = 10; // nombre d'étapes pour simuler un "changement journalier"
+      const steps = 10; 
       const stepChange = (newPrice - lastPrice) / steps;
 
       for (let i = 1; i <= steps; i++) {
         priceHistory.push(lastPrice + stepChange * i);
       }
+      currentLivePrice = newPrice;
       lastManualChangeTime = now;
+      lastChartUpdateTime = now;
       saveHistory();
       refreshChart();
-      updateDisplay();
+      updateDisplayLivePrice();
     }
 
-    function addSmallRandomChange() {
+    // Sauvegarde locale
+    function saveHistory() {
+      localStorage.setItem('dyolarPriceHistory', JSON.stringify(priceHistory));
+      localStorage.setItem('dyolarLastManualChange', lastManualChangeTime.toString());
+      localStorage.setItem('dyolarLastChartUpdate', lastChartUpdateTime.toString());
+    }
+
+    // Fluctuations "live" toutes les 30s, modifient le prix affiché mais PAS le graphique
+    function addSmallLiveFluctuation() {
+      const fluctuationMax = 0.02;
+      const change = (Math.random() * fluctuationMax * 2) - fluctuationMax;
+      let newPrice = currentLivePrice + change;
+      if (newPrice < 0.01) newPrice = 0.01;
+      currentLivePrice = newPrice;
+      updateDisplayLivePrice();
+    }
+
+    // Toutes les 2h, on ajoute le prix live au graphique comme nouveau point "officiel"
+    function maybeUpdateChartFromLivePrice() {
       const now = Date.now();
-      const lastPrice = priceHistory[priceHistory.length - 1];
-      // Ne pas dépasser 6h entre changements "manuels" visibles
-      if (now - lastManualChangeTime < 6 * 3600 * 1000) {
-        // fluctuation légère +/- 0.02 max
-        const change = (Math.random() * 0.04 - 0.02);
-        let newPrice = lastPrice + change;
-        if (newPrice < 0.01) newPrice = 0.01;
-        priceHistory.push(newPrice);
-        // garder taille max pour pas surcharger
-        if (priceHistory.length > 300) {
-          priceHistory.shift();
-        }
+      const deuxHeures = 2 * 3600 * 1000;
+      if (now - lastChartUpdateTime > deuxHeures) {
+        priceHistory.push(currentLivePrice);
+        if (priceHistory.length > 300) priceHistory.shift();
+        lastChartUpdateTime = now;
         saveHistory();
         refreshChart();
-        updateDisplay();
       }
     }
 
-    function refreshChart() {
-      dyolarChart.data.labels = priceHistory.map((_, i) => i);
-      dyolarChart.data.datasets[0].data = priceHistory;
-      dyolarChart.update('none'); // 'none' = pas d'animation
-    }
-
-    // Bouton secret pour ajouter un prix manuel
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        if (document.activeElement.tagName !== 'INPUT') return; // éviter en plein input
-      }
-    });
-
+    // Gestion du code secret pour changer prix manuellement
     let secretSequence = '';
     const secretCode = 'DYOLISECRET';
-
     window.addEventListener('keydown', (e) => {
       secretSequence += e.key.toUpperCase();
-      if (!secretCode.startsWith(secretSequence)) {
-        secretSequence = '';
-      }
+      if (!secretCode.startsWith(secretSequence)) secretSequence = '';
       if (secretSequence === secretCode) {
         secretSequence = '';
         const userPrice = prompt('Entrez le nouveau prix DYOLAR:');
@@ -218,6 +223,7 @@
       }
     });
 
+    // Fonction airdrop simple
     function claimAirdrop() {
       const pseudo = document.getElementById('pseudo').value.trim();
       const msg = document.getElementById('claimMsg');
@@ -230,12 +236,15 @@
       msg.style.color = 'gold';
     }
 
-    // Initialisation à l'ouverture
+    // Initialisation
     refreshChart();
-    updateDisplay();
+    updateDisplayLivePrice();
 
-    // Evolution automatique toutes les 30s
-    setInterval(addSmallRandomChange, 30000);
+    // Fluctuations live toutes les 30s
+    setInterval(addSmallLiveFluctuation, 30000);
+
+    // Vérification pour mettre à jour le graphique toutes les 10 minutes (ou moins)
+    setInterval(maybeUpdateChartFromLivePrice, 600000);
   </script>
 </body>
 </html>
