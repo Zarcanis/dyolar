@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DYOLAR - La Monnaie Sacrée</title>
   <style>
     body {
@@ -36,11 +36,10 @@
       font-size: 0.8em;
       margin-left: 0.5em;
     }
-    canvas#dyolarChart {
-      width: 200px !important;  /* 2x plus petit */
-      height: 100px !important;
-      margin: auto;
-      display: block;
+    #dyolarChart {
+      width: 50% !important;
+      height: auto !important;
+      margin: 0 auto;
     }
     .airdrop {
       background: #222;
@@ -67,25 +66,13 @@
       font-size: 0.9em;
       color: #999;
     }
-    /* Zone admin cachée par défaut */
-    #adminPanel {
+    #secretInput {
       display: none;
-      background: #222;
-      border: 2px solid gold;
-      padding: 1em;
-      margin: 2em auto;
-      max-width: 400px;
+      background: black;
       color: gold;
-    }
-    #adminPanel input {
-      padding: 0.4em;
-      font-size: 1em;
-      width: 150px;
-      margin-right: 0.5em;
-    }
-    #adminMsg {
-      margin-top: 0.8em;
-      min-height: 1.2em;
+      padding: 0.5em;
+      margin-top: 1em;
+      border: 1px solid gold;
     }
   </style>
 </head>
@@ -97,9 +84,11 @@
 
   <div class="section">
     <h2>Cours actuel du $DYOLAR</h2>
-    <p class="price">1 DYOLAR = <span id="dyoprice">3.14</span> UPP* <span class="change" id="changeDisplay">+2.21 (+237.58%)</span></p>
-    
-    <canvas id="dyolarChart" width="200" height="100"></canvas>
+    <p class="price">
+      1 DYOLAR = <span id="dyoprice">3.14</span> UPP*
+      <span class="change" id="dyoprice-change">+0.00 (+0.00%)</span>
+    </p>
+    <canvas id="dyolarChart"></canvas>
     <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p>
   </div>
 
@@ -107,7 +96,7 @@
     <h2>🔥 Airdrop Sacré !</h2>
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
     <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <br />
+    <br>
     <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
     <p id="claimMsg"></p>
   </div>
@@ -118,138 +107,54 @@
   </div>
 
   <footer>
-    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+   *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
   </footer>
 
-  <!-- Panneau admin caché -->
-  <div id="adminPanel">
-    <h3>🔐 Panneau DYOLAR (ADMIN)</h3>
-    <input type="number" id="newPriceInput" placeholder="Nouveau prix base" step="0.01" min="0.01" />
-    <button class="btn" onclick="setBasePriceFromInput()">Fixer prix</button>
-    <p id="adminMsg"></p>
-  </div>
+  <input type="text" id="secretInput" placeholder="Nouveau prix sacré (ex: 5.55)" onkeydown="handlePriceEnter(event)">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Variables globales
-    let basePrice;
-    let priceHistory = [];
+    let currentPrice = parseFloat(localStorage.getItem('currentPrice')) || 3.14;
+    let basePrice = currentPrice;
+    let graphDataHistory = JSON.parse(localStorage.getItem('graphDataHistory')) || [
+      { time: "Jour 1", price: currentPrice }
+    ];
 
-    // Chargement des données depuis localStorage
-    function loadData() {
-      const storedHistory = localStorage.getItem('dyolarPriceHistory');
-      const storedBasePrice = localStorage.getItem('dyolarBasePrice');
-      if (storedHistory && storedBasePrice) {
-        priceHistory = JSON.parse(storedHistory);
-        basePrice = parseFloat(storedBasePrice);
-      } else {
-        basePrice = 3.14;
-        priceHistory = [basePrice];
-        saveData();
-      }
-    }
-
-    // Sauvegarde dans localStorage
-    function saveData() {
-      localStorage.setItem('dyolarPriceHistory', JSON.stringify(priceHistory));
-      localStorage.setItem('dyolarBasePrice', basePrice.toString());
-    }
-
-    // Mise à jour de l’affichage du prix + changement en % depuis le premier
-    function updatePriceDisplay(currentPrice) {
-      document.getElementById('dyoprice').innerText = currentPrice.toFixed(2);
-
-      const initial = priceHistory[0];
-      const diff = currentPrice - initial;
-      const percent = (diff / initial) * 100;
-
-      const changeElem = document.getElementById('changeDisplay');
-      changeElem.innerText = `${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${percent >= 0 ? '+' : ''}${percent.toFixed(2)}%)`;
-      changeElem.style.color = diff >= 0 ? 'lightgreen' : 'crimson';
-    }
-
-    // Chart.js setup
     const ctx = document.getElementById('dyolarChart').getContext('2d');
     const dyolarChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: [],
+        labels: graphDataHistory.map(dp => dp.time),
         datasets: [{
           label: 'Cours du DYOLAR',
-          data: [],
+          data: graphDataHistory.map(dp => dp.price),
           backgroundColor: 'rgba(255, 215, 0, 0.2)',
           borderColor: 'gold',
           borderWidth: 2,
-          pointBackgroundColor: 'white',
-          tension: 0.3
+          pointBackgroundColor: 'white'
         }]
       },
       options: {
         scales: {
-          y: {
-            beginAtZero: false,
-            ticks: {
-              color: 'gold'
-            }
-          },
-          x: {
-            ticks: {
-              color: 'gold'
-            }
-          }
+          y: { beginAtZero: false },
+          x: { ticks: { color: 'gold' } }
         },
         plugins: {
-          legend: {
-            labels: {
-              color: 'gold'
-            }
-          }
+          legend: { labels: { color: 'gold' } }
         }
       }
     });
 
-    // Mise à jour du graphique avec l’historique complet
-    function updateChart() {
-      // Labels : juste des indices jour (ou minute) depuis début
-      dyolarChart.data.labels = priceHistory.map((_, i) => `#${i+1}`);
-      dyolarChart.data.datasets[0].data = priceHistory;
-      dyolarChart.update();
+    function updateDisplayedPrice() {
+      const dyoprice = document.getElementById("dyoprice");
+      const change = document.getElementById("dyoprice-change");
+      dyoprice.innerText = currentPrice.toFixed(2);
+      const diff = currentPrice - basePrice;
+      const percent = ((diff / basePrice) * 100).toFixed(2);
+      const sign = diff >= 0 ? '+' : '';
+      change.innerText = `${sign}${diff.toFixed(2)} (${sign}${percent}%)`;
     }
 
-    // Fixer un nouveau prix base (manuel) et l’ajouter à l’historique (sans reset)
-    function setBasePrice(newPrice) {
-      basePrice = newPrice;
-      priceHistory.push(newPrice);
-      saveData();
-      updatePriceDisplay(newPrice);
-      updateChart();
-      document.getElementById('adminMsg').innerText = `Prix de base fixé à ${newPrice.toFixed(2)} UPP.`;
-      document.getElementById('adminMsg').style.color = "gold";
-      document.getElementById('newPriceInput').value = '';
-    }
-    function setBasePriceFromInput() {
-      const input = document.getElementById('newPriceInput').value.trim();
-      if (!input || isNaN(input) || parseFloat(input) <= 0) {
-        document.getElementById('adminMsg').innerText = "Entre un nombre positif valide.";
-        document.getElementById('adminMsg').style.color = "crimson";
-        return;
-      }
-      setBasePrice(parseFloat(input));
-    }
-
-    // Fluctuation automatique (minime) toutes les minutes
-    function autoFluctuate() {
-      const lastPrice = priceHistory[priceHistory.length - 1];
-      let fluctuation = (Math.random() * 0.1) - 0.05; // ±0.05 max
-      let newPrice = lastPrice + fluctuation;
-      if (newPrice < 0.01) newPrice = 0.01;
-      priceHistory.push(newPrice);
-      saveData();
-      updatePriceDisplay(newPrice);
-      updateChart();
-    }
-
-    // Airdrop faux
     function claimAirdrop() {
       const pseudo = document.getElementById('pseudo').value.trim();
       const msg = document.getElementById('claimMsg');
@@ -262,29 +167,54 @@
       msg.style.color = "gold";
     }
 
-    // Accès admin : taper DYOLISECRET pour afficher panneau caché
-    let keySequence = '';
-    const secretCode = 'DYOLISECRET';
+    function autoVaryPrice() {
+      const variation = (Math.random() - 0.5) * 0.02; // Mini variation
+      currentPrice += variation;
+      updateDisplayedPrice();
+    }
 
-    window.addEventListener('keydown', (e) => {
-      keySequence += e.key.toUpperCase();
-      if (!secretCode.startsWith(keySequence)) {
-        keySequence = '';
-      } else if (keySequence === secretCode) {
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('adminMsg').innerText = 'Panneau admin activé.';
-        document.getElementById('adminMsg').style.color = 'gold';
-        keySequence = '';
+    function addDataPointToGraph(label, price) {
+      graphDataHistory.push({ time: label, price: price });
+      dyolarChart.data.labels.push(label);
+      dyolarChart.data.datasets[0].data.push(price);
+      dyolarChart.update();
+      saveState();
+    }
+
+    function handlePriceEnter(event) {
+      if (event.key === "Enter") {
+        const newPrice = parseFloat(event.target.value);
+        if (!isNaN(newPrice)) {
+          currentPrice = newPrice;
+          basePrice = newPrice;
+          const newLabel = "Jour " + (graphDataHistory.length + 1);
+          addDataPointToGraph(newLabel, newPrice);
+          updateDisplayedPrice();
+          event.target.value = "";
+        }
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('currentPrice', currentPrice.toString());
+      localStorage.setItem('graphDataHistory', JSON.stringify(graphDataHistory));
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "DYOLISECRET" || e.code === "Enter" && e.target.tagName !== "INPUT") {
+        const input = document.getElementById("secretInput");
+        input.style.display = "inline-block";
+        input.focus();
       }
     });
 
-    // Initialisation au chargement
-    loadData();
-    updatePriceDisplay(basePrice);
-    updateChart();
+    // Mise à jour du prix automatique toutes les 30s
+    setInterval(() => {
+      autoVaryPrice();
+    }, 30000);
 
-    // Démarrer fluctuation automatique toutes les minutes (60000 ms)
-    setInterval(autoFluctuate, 60000);
+    updateDisplayedPrice();
+    dyolarChart.update();
   </script>
 </body>
 </html>
