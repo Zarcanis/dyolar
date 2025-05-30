@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DYOLAR - La Monnaie Sacrée</title>
   <style>
     body {
@@ -32,14 +32,8 @@
       margin: 1em 0;
     }
     .change {
-      color: lightgreen;
       font-size: 0.8em;
       margin-left: 0.5em;
-    }
-    #dyolarChart {
-      width: 50% !important;
-      height: auto !important;
-      margin: 0 auto;
     }
     .airdrop {
       background: #222;
@@ -66,14 +60,6 @@
       font-size: 0.9em;
       color: #999;
     }
-    #secretInput {
-      display: none;
-      background: black;
-      color: gold;
-      padding: 0.5em;
-      margin-top: 1em;
-      border: 1px solid gold;
-    }
   </style>
 </head>
 <body>
@@ -85,18 +71,18 @@
   <div class="section">
     <h2>Cours actuel du $DYOLAR</h2>
     <p class="price">
-      1 DYOLAR = <span id="dyoprice">3.14</span> UPP*
-      <span class="change" id="dyoprice-change">+0.00 (+0.00%)</span>
+      1 DYOLAR = <span id="dyoprice">0.00</span> UPP* 
+      <span class="change" style="color: lightgreen;">+0.00 (0.00%)</span>
     </p>
-    <canvas id="dyolarChart"></canvas>
-    <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p>
+
+    <canvas id="dyolarChart" width="400" height="100"></canvas>
   </div>
 
   <div class="section airdrop">
     <h2>🔥 Airdrop Sacré !</h2>
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
     <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <br>
+    <br />
     <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
     <p id="claimMsg"></p>
   </div>
@@ -107,114 +93,149 @@
   </div>
 
   <footer>
-   *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
   </footer>
-
-  <input type="text" id="secretInput" placeholder="Nouveau prix sacré (ex: 5.55)" onkeydown="handlePriceEnter(event)">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    let currentPrice = parseFloat(localStorage.getItem('currentPrice')) || 3.14;
-    let basePrice = currentPrice;
-    let graphDataHistory = JSON.parse(localStorage.getItem('graphDataHistory')) || [
-      { time: "Jour 1", price: currentPrice }
-    ];
+    // Récupération des données dans localStorage ou initialisation
+    let priceHistory = JSON.parse(localStorage.getItem('dyolarPriceHistory')) || [3.14];
+    let lastManualChangeTime = localStorage.getItem('dyolarLastManualChange') 
+                               ? parseInt(localStorage.getItem('dyolarLastManualChange')) 
+                               : Date.now();
 
     const ctx = document.getElementById('dyolarChart').getContext('2d');
     const dyolarChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: graphDataHistory.map(dp => dp.time),
+        labels: priceHistory.map((_, i) => i), // labels arbitraires (index)
         datasets: [{
           label: 'Cours du DYOLAR',
-          data: graphDataHistory.map(dp => dp.price),
+          data: priceHistory,
           backgroundColor: 'rgba(255, 215, 0, 0.2)',
           borderColor: 'gold',
           borderWidth: 2,
-          pointBackgroundColor: 'white'
+          pointBackgroundColor: 'white',
+          tension: 0.2,
         }]
       },
       options: {
         scales: {
-          y: { beginAtZero: false },
-          x: { ticks: { color: 'gold' } }
+          y: { beginAtZero: false }
         },
         plugins: {
           legend: { labels: { color: 'gold' } }
-        }
+        },
+        animation: false,
       }
     });
 
-    function updateDisplayedPrice() {
-      const dyoprice = document.getElementById("dyoprice");
-      const change = document.getElementById("dyoprice-change");
-      dyoprice.innerText = currentPrice.toFixed(2);
-      const diff = currentPrice - basePrice;
-      const percent = ((diff / basePrice) * 100).toFixed(2);
-      const sign = diff >= 0 ? '+' : '';
-      change.innerText = `${sign}${diff.toFixed(2)} (${sign}${percent}%)`;
+    function updateDisplay() {
+      const currentPrice = priceHistory[priceHistory.length - 1];
+      const basePrice = priceHistory[0];
+      const changeAmount = currentPrice - basePrice;
+      const changePercent = ((changeAmount / basePrice) * 100).toFixed(2);
+
+      document.getElementById('dyoprice').textContent = currentPrice.toFixed(2);
+
+      const changeSpan = document.querySelector('.change');
+      changeSpan.textContent = `${changeAmount >= 0 ? '+' : ''}${changeAmount.toFixed(2)} (${changePercent}%)`;
+      changeSpan.style.color = changeAmount >= 0 ? 'lightgreen' : 'crimson';
     }
+
+    function saveHistory() {
+      localStorage.setItem('dyolarPriceHistory', JSON.stringify(priceHistory));
+      localStorage.setItem('dyolarLastManualChange', lastManualChangeTime.toString());
+    }
+
+    function addPriceManual(newPrice) {
+      const now = Date.now();
+      // On ajoute le prix avec "poids" plus grand (plusieurs valeurs intermédiaires)
+      const lastPrice = priceHistory[priceHistory.length - 1];
+      const steps = 10; // nombre d'étapes pour simuler un "changement journalier"
+      const stepChange = (newPrice - lastPrice) / steps;
+
+      for (let i = 1; i <= steps; i++) {
+        priceHistory.push(lastPrice + stepChange * i);
+      }
+      lastManualChangeTime = now;
+      saveHistory();
+      refreshChart();
+      updateDisplay();
+    }
+
+    function addSmallRandomChange() {
+      const now = Date.now();
+      const lastPrice = priceHistory[priceHistory.length - 1];
+      // Ne pas dépasser 6h entre changements "manuels" visibles
+      if (now - lastManualChangeTime < 6 * 3600 * 1000) {
+        // fluctuation légère +/- 0.02 max
+        const change = (Math.random() * 0.04 - 0.02);
+        let newPrice = lastPrice + change;
+        if (newPrice < 0.01) newPrice = 0.01;
+        priceHistory.push(newPrice);
+        // garder taille max pour pas surcharger
+        if (priceHistory.length > 300) {
+          priceHistory.shift();
+        }
+        saveHistory();
+        refreshChart();
+        updateDisplay();
+      }
+    }
+
+    function refreshChart() {
+      dyolarChart.data.labels = priceHistory.map((_, i) => i);
+      dyolarChart.data.datasets[0].data = priceHistory;
+      dyolarChart.update('none'); // 'none' = pas d'animation
+    }
+
+    // Bouton secret pour ajouter un prix manuel
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (document.activeElement.tagName !== 'INPUT') return; // éviter en plein input
+      }
+    });
+
+    let secretSequence = '';
+    const secretCode = 'DYOLISECRET';
+
+    window.addEventListener('keydown', (e) => {
+      secretSequence += e.key.toUpperCase();
+      if (!secretCode.startsWith(secretSequence)) {
+        secretSequence = '';
+      }
+      if (secretSequence === secretCode) {
+        secretSequence = '';
+        const userPrice = prompt('Entrez le nouveau prix DYOLAR:');
+        const parsedPrice = parseFloat(userPrice);
+        if (!isNaN(parsedPrice) && parsedPrice > 0) {
+          addPriceManual(parsedPrice);
+          alert(`Prix DYOLAR mis à jour à ${parsedPrice.toFixed(2)} !`);
+        } else {
+          alert('Prix invalide, opération annulée.');
+        }
+      }
+    });
 
     function claimAirdrop() {
       const pseudo = document.getElementById('pseudo').value.trim();
       const msg = document.getElementById('claimMsg');
       if (!pseudo) {
-        msg.innerText = "Entre ton pseudo sacré, Disciple.";
-        msg.style.color = "crimson";
+        msg.innerText = 'Entre ton pseudo sacré, Disciple.';
+        msg.style.color = 'crimson';
         return;
       }
       msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🛐`;
-      msg.style.color = "gold";
+      msg.style.color = 'gold';
     }
 
-    function autoVaryPrice() {
-      const variation = (Math.random() - 0.5) * 0.02; // Mini variation
-      currentPrice += variation;
-      updateDisplayedPrice();
-    }
+    // Initialisation à l'ouverture
+    refreshChart();
+    updateDisplay();
 
-    function addDataPointToGraph(label, price) {
-      graphDataHistory.push({ time: label, price: price });
-      dyolarChart.data.labels.push(label);
-      dyolarChart.data.datasets[0].data.push(price);
-      dyolarChart.update();
-      saveState();
-    }
-
-    function handlePriceEnter(event) {
-      if (event.key === "Enter") {
-        const newPrice = parseFloat(event.target.value);
-        if (!isNaN(newPrice)) {
-          currentPrice = newPrice;
-          basePrice = newPrice;
-          const newLabel = "Jour " + (graphDataHistory.length + 1);
-          addDataPointToGraph(newLabel, newPrice);
-          updateDisplayedPrice();
-          event.target.value = "";
-        }
-      }
-    }
-
-    function saveState() {
-      localStorage.setItem('currentPrice', currentPrice.toString());
-      localStorage.setItem('graphDataHistory', JSON.stringify(graphDataHistory));
-    }
-
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "DYOLISECRET" || e.code === "Enter" && e.target.tagName !== "INPUT") {
-        const input = document.getElementById("secretInput");
-        input.style.display = "inline-block";
-        input.focus();
-      }
-    });
-
-    // Mise à jour du prix automatique toutes les 30s
-    setInterval(() => {
-      autoVaryPrice();
-    }, 30000);
-
-    updateDisplayedPrice();
-    dyolarChart.update();
+    // Evolution automatique toutes les 30s
+    setInterval(addSmallRandomChange, 30000);
   </script>
 </body>
 </html>
