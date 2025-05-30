@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DYOLAR - La Monnaie Sacrée</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #0b0b0b;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      padding: 2em;
+      background: #111;
+      border-bottom: 3px solid gold;
+    }
+    h1 {
+      font-size: 2.5em;
+      color: gold;
+    }
+    .section {
+      padding: 2em 1em;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .price {
+      font-size: 2em;
+      margin: 1em 0;
+    }
+    .fake-chart {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(to right, #111, gold, #111);
+      margin: 1em 0;
+    }
+    .airdrop {
+      background: #222;
+      border: 2px dashed gold;
+      padding: 2em;
+      margin: 2em 0;
+    }
+    .btn {
+      background: gold;
+      color: black;
+      padding: 0.8em 1.5em;
+      border: none;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 1em;
+    }
+    .testimonials {
+      font-style: italic;
+      margin-top: 1em;
+    }
+    footer {
+      background: #111;
+      padding: 1em;
+      font-size: 0.9em;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💰 DYOLAR : La Monnaie du DYOLISSIME</h1>
+    <p>Plus précieuse que la Foi. Plus rare qu’un bon karma.</p>
+  </header>
+
+  <div class="section">
+    <h2>Cours actuel du DYOLAR</h2>
+    <p class="price">1 DYOLAR = <span id="dyoprice">3.14</span> Volontés Divines</p>
+    <div class="fake-chart"></div>
+    <p>🔺 Le PSAUME DE CIOCIE fait grimper le marché !</p>
+  </div>
+
+  <div class="section airdrop">
+    <h2>🔥 Airdrop Sacré !</h2>
+    <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
+    <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
+    <br>
+    <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
+    <p id="claimMsg"></p>
+  </div>
+
+  <div class="section testimonials">
+    <p>"Depuis que j’ai investi dans le DYOLAR, mes rêves sont devenus des T-poses." — @JeanBRO</p>
+    <p>"Ma poule m’a dit d’acheter encore." — @ProphBRO</p>
+  </div>
+
+  <footer>
+    DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+  </footer>
+
+  <script>
+    function claimAirdrop() {
+      const pseudo = document.getElementById('pseudo').value.trim();
+      const msg = document.getElementById('claimMsg');
+      if (!pseudo) {
+        msg.innerText = "Entre ton pseudo sacré, Disciple.";
+        msg.style.color = "crimson";
+        return;
+      }
+      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🛐`;
+      msg.style.color = "gold";
+    }
+  </script>
+</body>
+</html>
