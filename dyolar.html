@@ -87,6 +87,7 @@
       width: 100%;
       color: gold;
       font-weight: bold;
+      z-index: 999;
     }
     footer {
       background: #111;
@@ -94,11 +95,18 @@
       font-size: 0.9em;
       color: #999;
     }
-    input[type=number] {
+    input[type=number], input[type=text] {
       font-size: 1em;
       padding: 0.3em;
       width: 120px;
       margin-right: 1em;
+      border: 1px solid #444;
+      border-radius: 3px;
+      background: #222;
+      color: #f1f1f1;
+    }
+    input[type=text] {
+      width: 200px;
     }
   </style>
 </head>
@@ -120,26 +128,26 @@
     </div>
 
     <div class="timeframe-buttons">
-      <button onclick="setTimeframe(1)" id="btn-1h">1h</button>
-      <button onclick="setTimeframe(24)" id="btn-24h" class="active">1j</button>
-      <button onclick="setTimeframe(72)" id="btn-3d">3j</button>
-      <button onclick="setTimeframe(168)" id="btn-7d">1 semaine</button>
+      <button type="button" onclick="setTimeframe(1)" id="btn-1h">1h</button>
+      <button type="button" onclick="setTimeframe(24)" id="btn-24h" class="active">1j</button>
+      <button type="button" onclick="setTimeframe(72)" id="btn-3d">3j</button>
+      <button type="button" onclick="setTimeframe(168)" id="btn-7d">1 semaine</button>
     </div>
   </div>
 
   <div class="section airdrop">
     <h2>🔥 Airdrop Sacré !</h2>
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
-    <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
+    <input type="text" id="pseudo" placeholder="Ton nom de BRO" autocomplete="off" />
     <br />
-    <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
+    <button type="button" class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
     <p id="claimMsg"></p>
   </div>
 
-  <div id="adminPanel" class="admin-panel">
+  <div id="adminPanel" class="admin-panel" aria-hidden="true">
     <h3>📈 Ajuster le cours manuellement</h3>
-    <input type="number" id="manualInput" step="0.01" />
-    <button onclick="setManualPrice()">Mettre à jour</button>
+    <input type="number" id="manualInput" step="0.01" min="0.01" placeholder="Nouveau prix" />
+    <button type="button" onclick="setManualPrice()">Mettre à jour</button>
   </div>
 
   <footer>
@@ -149,8 +157,7 @@
 <script>
   // === CONFIG SUPABASE ===
   const SUPABASE_URL = 'https://sxjocrdqiotmshssenyi.supabase.co'; // <-- remplace par ton URL Supabase
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4am9jcmRxaW90bXNoc3NlbnlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTIxMjIsImV4cCI6MjA2NDI2ODEyMn0.WkRU3iXa832z3D2zRlNplXcqIu1EHnVmx_RK11q-yaM
-';          // <-- remplace par ta clé publique anon
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4am9jcmRxaW90bXNoc3NlbnlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTIxMjIsImV4cCI6MjA2NDI2ODEyMn0.WkRU3iXa832z3D2zRlNplXcqIu1EHnVmx_RK11q-yaM'; // <-- remplace par ta clé publique anon
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const priceEl = document.getElementById('dyoprice');
@@ -258,10 +265,8 @@
     }
     if (rows.length === 0) {
       // Pas de données en base, on initialise
-      const nowISO = new Date().toISOString();
       data = [{ time: Date.now(), value: currentPrice }];
       lastSavedPrice = currentPrice;
-      // on peut envoyer ce point en base (optionnel)
       return;
     }
     // Formatage
@@ -275,95 +280,127 @@
 
   // Ajoute un nouveau prix en base Supabase
   async function addPriceToDB(newPrice) {
-    const { error } = await supabase
-      .from('dyolar_prices')
-      .insert([{ price: newPrice, timestamp: new Date().toISOString() }]);
+    const now = new Date().toISOString();
+    const { error } = await supabase.from('dyolar_prices').insert([{ price: newPrice, timestamp: now }]);
     if (error) {
-      console.error('Erreur ajout prix:', error);
-      alert('Erreur enregistrement en base');
+      console.error('Erreur insertion Supabase:', error);
+      return false;
     }
+    return true;
   }
 
-  // Mise à jour manuelle du prix (via admin)
-  async function setManualPrice() {
-    const input = document.getElementById('manualInput');
-    let val = parseFloat(input.value);
-    if (isNaN(val) || val <= 0) {
-      alert('Prix invalide');
-      return;
-    }
-    currentPrice = val;
-    lastSavedPrice = val;
-    // Ajouter en base
-    await addPriceToDB(val);
-    data.push({ time: Date.now(), value: val });
-    updateDisplay();
-    refreshChart();
-    input.value = '';
-  }
-
-  // Fluctuation automatique légère, sans enregistrer en base
-  function autoFluctuate() {
-    // fluctue entre 0.01 et 0.20 UPP (positif ou négatif)
-    const fluct = (Math.random() * 0.19 + 0.01) * (Math.random() < 0.5 ? -1 : 1);
-    currentPrice = Math.max(0.01, currentPrice + fluct);
-    updateDisplay();
-    refreshChart();
-  }
-
-  // Gestion du panneau admin secret via code clavier DYOLISECRET
-  let keyBuffer = '';
-  window.addEventListener('keydown', e => {
-    keyBuffer += e.key.toUpperCase();
-    if (keyBuffer.length > 10) keyBuffer = keyBuffer.slice(-10);
-    if (keyBuffer.endsWith('DYOLISECRET')) {
-      const panel = document.getElementById('adminPanel');
-      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-      keyBuffer = '';
-    }
-  });
-
-  // Gestion de la plage temporelle pour le graphique
+  // Gestion du bouton de timeframe
   function setTimeframe(hours) {
     currentRange = hours;
-    refreshChart();
-    // Mise à jour des boutons
-    ['btn-1h', 'btn-24h', 'btn-3d', 'btn-7d'].forEach(id => {
-      document.getElementById(id).classList.remove('active');
+    document.querySelectorAll('.timeframe-buttons button').forEach(btn => {
+      btn.classList.remove('active');
     });
-    if (hours === 1) document.getElementById('btn-1h').classList.add('active');
-    else if (hours === 24) document.getElementById('btn-24h').classList.add('active');
-    else if (hours === 72) document.getElementById('btn-3d').classList.add('active');
-    else if (hours === 168) document.getElementById('btn-7d').classList.add('active');
+    document.getElementById('btn-' + (hours === 168 ? '7d' : hours + (hours === 1 ? 'h' : '')))?.classList.add('active');
+    refreshChart();
   }
 
-  // Simulation airdrop RP (simple)
-  function claimAirdrop() {
-    const pseudo = document.getElementById('pseudo').value.trim();
-    const msgEl = document.getElementById('claimMsg');
-    if (pseudo.length < 3) {
-      msgEl.textContent = 'Ton nom de BRO est trop court.';
-      msgEl.style.color = 'crimson';
+  // Claim airdrop function
+  async function claimAirdrop() {
+    const pseudoInput = document.getElementById('pseudo');
+    const msg = document.getElementById('claimMsg');
+    const pseudo = pseudoInput.value.trim().toUpperCase();
+
+    if (!pseudo) {
+      msg.textContent = "Merci d'entrer ton nom de BRO.";
+      msg.style.color = 'crimson';
       return;
     }
-    msgEl.textContent = `Bravo ${pseudo} ! Tu as reçu 69 DYOLARS 🔥🔥🔥`;
-    msgEl.style.color = 'lightgreen';
+    if (pseudo.length > 15) {
+      msg.textContent = "Nom trop long, max 15 caractères.";
+      msg.style.color = 'crimson';
+      return;
+    }
+
+    // Vérifier si déjà réclamé
+    let { data: claims, error } = await supabase
+      .from('airdrops')
+      .select('*')
+      .eq('pseudo', pseudo);
+
+    if (error) {
+      msg.textContent = "Erreur réseau, réessaie plus tard.";
+      msg.style.color = 'crimson';
+      return;
+    }
+    if (claims.length > 0) {
+      msg.textContent = "Tu as déjà réclamé ton airdrop, BRO.";
+      msg.style.color = 'orange';
+      return;
+    }
+
+    // Insérer la réclamation
+    const { error: insertError } = await supabase
+      .from('airdrops')
+      .insert([{ pseudo: pseudo, amount: 69, timestamp: new Date().toISOString() }]);
+
+    if (insertError) {
+      msg.textContent = "Erreur serveur, réessaie plus tard.";
+      msg.style.color = 'crimson';
+      return;
+    }
+
+    msg.textContent = `🔥 Airdrop de 69 DYOLAR envoyé à ${pseudo} ! Gloire au DYOLISSIME !`;
+    msg.style.color = 'lightgreen';
+    pseudoInput.value = '';
   }
 
-  // Initialisation complète
+  // Fonction admin : mettre à jour le prix manuellement
+  async function setManualPrice() {
+    const input = document.getElementById('manualInput');
+    const newPrice = parseFloat(input.value);
+    if (isNaN(newPrice) || newPrice <= 0) {
+      alert("Prix invalide.");
+      return;
+    }
+    currentPrice = newPrice;
+    const success = await addPriceToDB(newPrice);
+    if (success) {
+      data.push({ time: Date.now(), value: newPrice });
+      lastSavedPrice = newPrice;
+      updateDisplay();
+      refreshChart();
+      input.value = '';
+      alert('Prix mis à jour avec succès.');
+    }
+  }
+
+  // Convertir input pseudo en majuscule en temps réel
+  document.getElementById('pseudo').addEventListener('input', (e) => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  // Détection simple d'admin par mot de passe (prompt)
+  function checkAdmin() {
+    const pwd = prompt("Mot de passe admin DYOLAR ?");
+    if (pwd === "DYOLISSIME2025") {
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('adminPanel').setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  // Initialisation
   async function init() {
     await loadData();
     updateDisplay();
     refreshChart();
-
-    // Mise à jour auto toute les 30 secondes, fluctuation légère
-    setInterval(() => {
-      autoFluctuate();
-    }, 30000);
+    // affichage admin au clic rapide 5 fois sur header (exemple)
+    let clicks = 0;
+    document.querySelector('header').addEventListener('click', () => {
+      clicks++;
+      if (clicks === 5) {
+        checkAdmin();
+        clicks = 0;
+      }
+      setTimeout(() => { clicks = 0; }, 1000);
+    });
   }
 
   init();
 </script>
-
 </body>
 </html>
