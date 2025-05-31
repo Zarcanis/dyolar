@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DYOLAR - La Monnaie Sacrée</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: 'Arial', sans-serif;
@@ -32,42 +33,14 @@
       margin: 1em 0;
     }
     .change {
+      color: lightgreen;
       font-size: 0.8em;
       margin-left: 0.5em;
     }
-    .change.positive { color: lightgreen; }
-    .change.negative { color: crimson; }
     .chart-container {
       position: relative;
       height: 250px;
-      width: 100%;
-      margin: 1em 0;
-    }
-    .range-buttons {
-      margin-bottom: 1em;
-    }
-    .range-buttons button {
-      background: #222;
-      border: 1px solid gold;
-      color: gold;
-      padding: 0.5em 1em;
-      margin: 0 0.2em;
-      cursor: pointer;
-    }
-    .range-buttons button.active {
-      background: gold;
-      color: black;
-    }
-    .admin-panel {
-      display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #222;
-      border-top: 2px solid gold;
-      padding: 1em;
-      text-align: center;
+      margin: 1em auto;
     }
     .airdrop {
       background: #222;
@@ -83,6 +56,27 @@
       cursor: pointer;
       font-size: 1em;
       margin-top: 1em;
+    }
+    .timeframe-buttons {
+      margin-top: 1em;
+    }
+    .timeframe-buttons button {
+      margin: 0 0.3em;
+      padding: 0.4em 0.8em;
+      background: #333;
+      color: white;
+      border: 1px solid #888;
+      cursor: pointer;
+    }
+    .admin-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      background: #111;
+      border-top: 2px solid gold;
+      padding: 1em;
+      display: none;
+      width: 100%;
     }
     footer {
       background: #111;
@@ -101,19 +95,19 @@
   <div class="section">
     <h2>Cours actuel du $DYOLAR</h2>
     <p class="price">
-      1 DYOLAR = <span id="dyoprice">0.00</span> UPP
-      <span class="change" id="dyoprice-change">+0.00%</span>
+      1 DYOLAR = <span id="dyoprice">3.14</span> UPP
+      <span id="change" class="change">+0.00%</span>
     </p>
-
-    <div class="range-buttons">
-      <button data-range="1h">1h</button>
-      <button data-range="1d" class="active">1j</button>
-      <button data-range="3d">3j</button>
-      <button data-range="7d">1s</button>
-    </div>
 
     <div class="chart-container">
       <canvas id="dyolarChart"></canvas>
+    </div>
+
+    <div class="timeframe-buttons">
+      <button onclick="setTimeframe(1)">1h</button>
+      <button onclick="setTimeframe(24)">1j</button>
+      <button onclick="setTimeframe(72)">3j</button>
+      <button onclick="setTimeframe(168)">1 semaine</button>
     </div>
   </div>
 
@@ -121,100 +115,102 @@
     <h2>🔥 Airdrop Sacré !</h2>
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
     <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <br>
+    <br />
     <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
     <p id="claimMsg"></p>
   </div>
 
-  <div class="admin-panel" id="adminPanel">
-    <p>🛠 Changer le cours (manuel) :</p>
-    <input type="number" id="manualInput" step="0.01" placeholder="Nouveau prix UPP" />
+  <div class="section">
+    <input type="text" id="secretCode" placeholder="Code secret BRO" oninput="checkSecret()">
+  </div>
+
+  <div id="adminPanel" class="admin-panel">
+    <h3>📈 Ajuster le cours manuellement</h3>
+    <input type="number" id="manualInput" step="0.01" />
     <button onclick="setManualPrice()">Mettre à jour</button>
   </div>
 
   <footer>
-    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Gloire au D.
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const priceDisplay = document.getElementById('dyoprice');
-    const priceChangeDisplay = document.getElementById('dyoprice-change');
-    const adminPanel = document.getElementById('adminPanel');
-    const rangeButtons = document.querySelectorAll('.range-buttons button');
-
-    let history = JSON.parse(localStorage.getItem('dyolarHistory')) || [];
-    let lastManualPrice = parseFloat(localStorage.getItem('lastManualPrice')) || 3.14;
-    let currentPrice = lastManualPrice;
-
+    const priceEl = document.getElementById('dyoprice');
+    const changeEl = document.getElementById('change');
     const ctx = document.getElementById('dyolarChart').getContext('2d');
+    let data = JSON.parse(localStorage.getItem("dyolarHistory")) || [];
+    let basePrice = data.length ? data[data.length - 1].value : 3.14;
+    let currentPrice = basePrice;
+
+    function saveData() {
+      localStorage.setItem("dyolarHistory", JSON.stringify(data));
+    }
+
+    function updateDisplay() {
+      priceEl.textContent = currentPrice.toFixed(2);
+      const change = ((currentPrice - basePrice) / basePrice) * 100;
+      changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+      changeEl.style.color = change >= 0 ? 'lightgreen' : 'crimson';
+    }
 
     const chart = new Chart(ctx, {
       type: 'line',
-      data: { labels: [], datasets: [{
-        label: 'Cours du DYOLAR',
-        data: [],
-        borderColor: 'gold',
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0.3,
-      }]},
+      data: {
+        labels: data.map(d => new Date(d.time).toLocaleTimeString()),
+        datasets: [{
+          label: 'Cours du DYOLAR',
+          data: data.map(d => d.value),
+          borderColor: 'gold',
+          backgroundColor: 'rgba(255, 215, 0, 0.2)',
+          tension: 0.3,
+          pointRadius: 0,
+        }]
+      },
       options: {
         scales: {
-          x: { type: 'time', time: { unit: 'hour' }, ticks: { color: '#aaa' } },
-          y: { ticks: { color: '#aaa' } }
+          x: {
+            ticks: { color: 'white' }
+          },
+          y: {
+            beginAtZero: false,
+            ticks: { color: 'white' }
+          }
         },
-        plugins: { legend: { labels: { color: 'gold' } } }
+        plugins: {
+          legend: {
+            labels: { color: 'gold' }
+          }
+        }
       }
     });
 
-    function updateDisplayedPrice() {
-      priceDisplay.textContent = currentPrice.toFixed(2);
-      const change = ((currentPrice - lastManualPrice) / lastManualPrice) * 100;
-      const rounded = change.toFixed(2);
-      priceChangeDisplay.textContent = `${change >= 0 ? '+' : ''}${rounded}%`;
-      priceChangeDisplay.className = `change ${change >= 0 ? 'positive' : 'negative'}`;
-    }
-
-    function updateChart() {
-      const range = document.querySelector('.range-buttons button.active').dataset.range;
-      const now = new Date();
-      let cutoff;
-      switch(range) {
-        case '1h': cutoff = new Date(now - 60*60*1000); break;
-        case '1d': cutoff = new Date(now - 24*60*60*1000); break;
-        case '3d': cutoff = new Date(now - 3*24*60*60*1000); break;
-        case '7d': cutoff = new Date(now - 7*24*60*60*1000); break;
-      }
-      const filtered = history.filter(p => new Date(p.time) > cutoff);
-      chart.data.labels = filtered.map(p => p.time);
-      chart.data.datasets[0].data = filtered.map(p => p.value);
+    function refreshChart(hours = 24) {
+      const now = Date.now();
+      const filtered = data.filter(d => now - d.time <= hours * 60 * 60 * 1000);
+      chart.data.labels = filtered.map(d => new Date(d.time).toLocaleTimeString());
+      chart.data.datasets[0].data = filtered.map(d => d.value);
       chart.update();
     }
 
-    function addPoint(value, manual = false) {
-      const point = { time: new Date().toISOString(), value: value };
-      history.push(point);
-      localStorage.setItem('dyolarHistory', JSON.stringify(history));
-      if (manual) {
-        lastManualPrice = value;
-        localStorage.setItem('lastManualPrice', value);
-      }
-      updateDisplayedPrice();
-      updateChart();
+    function addDataPoint(value) {
+      data.push({ time: Date.now(), value });
+      saveData();
+      refreshChart(currentRange);
     }
 
-    function autoFluctuate() {
-      const change = (Math.random() - 0.5) * 0.04; // ±2%
-      currentPrice = Math.max(0, currentPrice + change);
-      updateDisplayedPrice();
+    function simulateFluctuation() {
+      const variation = (Math.random() - 0.5) * 0.01;
+      currentPrice += variation;
+      updateDisplay();
     }
 
     function setManualPrice() {
-      const val = parseFloat(document.getElementById('manualInput').value);
-      if (!isNaN(val)) {
-        currentPrice = val;
-        addPoint(currentPrice, true);
+      const newVal = parseFloat(document.getElementById("manualInput").value);
+      if (!isNaN(newVal)) {
+        currentPrice = newVal;
+        basePrice = newVal;
+        addDataPoint(currentPrice);
+        updateDisplay();
       }
     }
 
@@ -230,32 +226,31 @@
       msg.style.color = "gold";
     }
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key.toUpperCase() === 'D') {
-        window.__secretCode = (window.__secretCode || '') + 'D';
-        if (window.__secretCode.endsWith('DYOLISECRET')) {
-          adminPanel.style.display = 'block';
-        }
-      } else {
-        window.__secretCode = '';
+    function checkSecret() {
+      const input = document.getElementById("secretCode").value;
+      if (input === "DYOLISECRET") {
+        document.getElementById("adminPanel").style.display = "block";
       }
-    });
+    }
 
-    rangeButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        rangeButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        updateChart();
-      });
-    });
+    let currentRange = 24;
+    function setTimeframe(hours) {
+      currentRange = hours;
+      refreshChart(hours);
+    }
 
-    // Démarrage :
-    if (history.length === 0) addPoint(currentPrice, true);
-    updateDisplayedPrice();
-    updateChart();
+    // Initial setup
+    if (data.length === 0) {
+      addDataPoint(currentPrice);
+    } else {
+      refreshChart(currentRange);
+      updateDisplay();
+    }
+
+    // Auto-fluctuation
     setInterval(() => {
-      autoFluctuate();
-    }, 30000); // fluctuation toutes les 30s
+      simulateFluctuation();
+    }, 30000);
   </script>
 </body>
 </html>
