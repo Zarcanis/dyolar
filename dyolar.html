@@ -145,7 +145,126 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Le script JavaScript complet sera ajouté ici
+    let dyoprice = 3.14;
+    let displayRangeHours = 1;
+    let priceHistory = JSON.parse(localStorage.getItem('priceHistory')) || [];
+
+    function addPricePoint(price, isManual = false) {
+      const now = new Date();
+      priceHistory.push({ time: now.toISOString(), value: price, manual: isManual });
+      localStorage.setItem('priceHistory', JSON.stringify(priceHistory));
+      updateDisplayedPrice(price);
+      updateChart();
+    }
+
+    function updateDisplayedPrice(newPrice) {
+      const oldPrice = dyoprice;
+      dyoprice = newPrice;
+      const change = (((dyoprice - oldPrice) / oldPrice) * 100).toFixed(2);
+      document.getElementById('dyoprice').textContent = dyoprice.toFixed(2);
+      const changeElem = document.getElementById('dyochange');
+      changeElem.textContent = `${change > 0 ? '+' : ''}${change}%`;
+      changeElem.style.color = change >= 0 ? 'lightgreen' : 'crimson';
+    }
+
+    function setManualPrice() {
+      const input = document.getElementById('manualPrice');
+      const newPrice = parseFloat(input.value);
+      if (!isNaN(newPrice)) {
+        addPricePoint(newPrice, true);
+        input.value = '';
+      }
+    }
+
+    function claimAirdrop() {
+      const pseudo = document.getElementById('pseudo').value.trim();
+      const msg = document.getElementById('claimMsg');
+      if (!pseudo) {
+        msg.innerText = "Entre ton pseudo sacré, Disciple.";
+        msg.style.color = "crimson";
+        return;
+      }
+      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🚐`;
+      msg.style.color = "gold";
+    }
+
+    function generateAutoFluctuation() {
+      const variation = (Math.random() * 0.14 + 0.01) * (Math.random() < 0.5 ? -1 : 1);
+      if (displayRangeHours === 1) {
+        addPricePoint(dyoprice + variation);
+      } else {
+        updateDisplayedPrice(dyoprice + variation);
+      }
+    }
+
+    setInterval(generateAutoFluctuation, 30000);
+
+    let chart;
+    function updateChart() {
+      const now = new Date();
+      const filtered = priceHistory.filter(p => {
+        const time = new Date(p.time);
+        return (now - time) <= displayRangeHours * 60 * 60 * 1000;
+      });
+      const labels = filtered.map(p => new Date(p.time).toLocaleTimeString());
+      const data = filtered.map(p => p.value);
+      if (chart) chart.destroy();
+      const ctx = document.getElementById('dyolarChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Cours du DYOLAR',
+            data,
+            borderColor: 'gold',
+            backgroundColor: 'rgba(255,215,0,0.1)',
+            borderWidth: 2,
+            pointRadius: 2,
+            pointBackgroundColor: 'white'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: { color: 'gold' },
+              grid: { color: '#444' }
+            },
+            x: {
+              ticks: { color: 'gold' },
+              grid: { color: '#444' }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: 'gold' } }
+          }
+        }
+      });
+    }
+
+    function setTimeRange(hours) {
+      displayRangeHours = hours;
+      updateChart();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const secret = 'DYOLISECRET';
+      window._secretBuffer = (window._secretBuffer || '') + e.key.toUpperCase();
+      if (window._secretBuffer.endsWith(secret)) {
+        document.getElementById('adminPanel').style.display = 'block';
+        window._secretBuffer = '';
+      }
+    });
+
+    if (priceHistory.length === 0) {
+      addPricePoint(dyoprice, true);
+    } else {
+      dyoprice = priceHistory[priceHistory.length - 1].value;
+      updateDisplayedPrice(dyoprice);
+      updateChart();
+    }
   </script>
 </body>
 </html>
