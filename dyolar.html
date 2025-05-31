@@ -33,7 +33,6 @@
       margin: 1em 0;
     }
     .change {
-      color: lightgreen;
       font-size: 0.8em;
       margin-left: 0.5em;
     }
@@ -136,7 +135,7 @@
     const ctx = document.getElementById('dyolarChart').getContext('2d');
     let data = JSON.parse(localStorage.getItem("dyolarHistory")) || [];
     let currentPrice = data.length ? data[data.length - 1].value : 3.14;
-    let lastManualPrice = currentPrice; // Valeur de référence pour %
+    let currentRange = 24;
 
     function saveData() {
       localStorage.setItem("dyolarHistory", JSON.stringify(data));
@@ -144,7 +143,9 @@
 
     function updateDisplay() {
       priceEl.textContent = currentPrice.toFixed(2);
-      const change = ((currentPrice - lastManualPrice) / lastManualPrice) * 100;
+      const previousIndex = data.length >= 2 ? data.length - 2 : data.length - 1;
+      const lastReferencePoint = data[previousIndex]?.value || currentPrice;
+      const change = ((currentPrice - lastReferencePoint) / lastReferencePoint) * 100;
       changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
       changeEl.style.color = change >= 0 ? 'lightgreen' : 'crimson';
     }
@@ -190,15 +191,15 @@
 
     function addDataPoint(value) {
       data.push({ time: Date.now(), value });
-      lastManualPrice = value; // Met à jour la valeur de référence
       saveData();
       refreshChart(currentRange);
+      updateDisplay();
     }
 
     function simulateFluctuation() {
-      const variation = (Math.random() - 0.5) * 0.01;
+      const variation = (Math.random() - 0.5) * 0.2; // ±0.1 UPP
       currentPrice += variation;
-      updateDisplay();
+      addDataPoint(currentPrice);
     }
 
     function setManualPrice() {
@@ -206,7 +207,6 @@
       if (!isNaN(newVal)) {
         currentPrice = newVal;
         addDataPoint(currentPrice);
-        updateDisplay();
       }
     }
 
@@ -218,10 +218,11 @@
         msg.style.color = "crimson";
         return;
       }
-      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 📜`;
+      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🛐`;
       msg.style.color = "gold";
     }
 
+    // Code secret DYOLISECRET (sans champ visible)
     let secretBuffer = '';
     window.addEventListener('keydown', (e) => {
       secretBuffer += e.key;
@@ -231,12 +232,12 @@
       }
     });
 
-    let currentRange = 24;
     function setTimeframe(hours) {
       currentRange = hours;
       refreshChart(hours);
     }
 
+    // Initialisation
     if (data.length === 0) {
       addDataPoint(currentPrice);
     } else {
@@ -244,9 +245,7 @@
       updateDisplay();
     }
 
-    setInterval(() => {
-      simulateFluctuation();
-    }, 30000);
+    setInterval(simulateFluctuation, 30000);
   </script>
 </body>
 </html>
