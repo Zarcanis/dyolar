@@ -5,7 +5,281 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DYOLAR - La Monnaie Sacrée</title>
   <style>
+    body {<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DYOLAR - La Monnaie Sacrée</title>
+  <style>
     body {
+      font-family: 'Arial', sans-serif;
+      background-color: #0b0b0b;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      padding: 2em;
+      background: #111;
+      border-bottom: 3px solid gold;
+    }
+    h1 {
+      font-size: 2.5em;
+      color: gold;
+    }
+    .section {
+      padding: 2em 1em;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .price {
+      font-size: 2em;
+      margin: 1em 0;
+    }
+    .change {
+      color: lightgreen;
+      font-size: 0.8em;
+      margin-left: 0.5em;
+    }
+    .chart-container {
+      position: relative;
+      margin: 1em auto;
+      width: 80%;
+      max-width: 800px;
+      height: 300px;
+    }
+    .airdrop {
+      background: #222;
+      border: 2px dashed gold;
+      padding: 2em;
+      margin: 2em 0;
+    }
+    .btn {
+      background: gold;
+      color: black;
+      padding: 0.8em 1.5em;
+      border: none;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 1em;
+    }
+    .testimonials {
+      font-style: italic;
+      margin-top: 1em;
+    }
+    footer {
+      background: #111;
+      padding: 1em;
+      font-size: 0.9em;
+      color: #999;
+    }
+    #adminPanel {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #111;
+      border-top: 2px solid gold;
+      padding: 1em;
+    }
+    #adminPanel input {
+      padding: 0.5em;
+      width: 80px;
+    }
+    .time-range {
+      margin: 1em 0;
+    }
+    .time-range button {
+      background: #444;
+      color: gold;
+      margin: 0 0.5em;
+      border: 1px solid gold;
+      padding: 0.4em 0.8em;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💰 DYOLAR : La Crypto-monnaie du DYOLISSIME</h1>
+    <p>Rejoins la COMMU des Crypto BROS !</p>
+  </header>
+
+  <div class="section">
+    <h2>Cours actuel du $DYOLAR</h2>
+    <p class="price">
+      1 DYOLAR = <span id="dyoprice">...</span> UPP*
+      <span class="change" id="dyochange"></span>
+    </p>
+
+    <div class="time-range">
+      <button>1 jour</button>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="dyolarChart"></canvas>
+    </div>
+  </div>
+
+  <div class="section airdrop">
+    <h2>🔥 Airdrop Sacré !</h2>
+    <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
+    <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
+    <br />
+    <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
+    <p id="claimMsg"></p>
+  </div>
+
+  <div class="section testimonials">
+    <p>"Depuis que j’ai investi dans le DYOLAR, mes rêves sont devenus des T-poses." — @JeanBRO</p>
+    <p>"Ma poule m’a dit d’acheter encore." — @ProphBRO</p>
+  </div>
+
+  <footer>
+    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+  </footer>
+
+  <div id="adminPanel">
+    <label for="manualPrice">Nouveau cours :</label>
+    <input type="number" id="manualPrice" step="0.01" />
+    <button onclick="setManualPrice()">Appliquer</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbw7EtXzo0-dPSM7SleKCucCoi3GMs3OfDTwcINM2Q83L2_YFaIIne2nKmULEuOzKMFk/exec";
+
+    let chart;
+    let lastPrice = null;
+    let priceHistory = [];
+
+    async function fetchPrice() {
+      try {
+        const res = await fetch(API_URL + "?action=get&maxRows=50");
+        const data = await res.json();
+        if (!data.length) return;
+
+        // Met à jour le prix affiché avec le dernier point
+        const lastPoint = data[data.length - 1];
+        updateDisplayedPrice(parseFloat(lastPoint.price));
+
+        // Prépare les données du graphique
+        const chartData = data.map((p) => ({
+          value: parseFloat(p.price),
+          time: p.time,
+        }));
+        updateChart(chartData);
+      } catch (e) {
+        console.error("Erreur de récupération du prix :", e);
+      }
+    }
+
+    async function setManualPrice() {
+      const input = document.getElementById("manualPrice");
+      const newPrice = parseFloat(input.value);
+      if (!isNaN(newPrice)) {
+        const res = await fetch(API_URL + `?action=set&price=${newPrice}`);
+        const text = await res.text();
+        if (text.trim() === "OK") {
+          updateDisplayedPrice(newPrice);
+          updateChart([{ value: newPrice, time: new Date().toISOString() }]);
+          input.value = "";
+        } else {
+          console.error("Erreur de mise à jour :", text);
+        }
+      }
+    }
+
+    function updateDisplayedPrice(newPrice) {
+      const priceElem = document.getElementById("dyoprice");
+      const changeElem = document.getElementById("dyochange");
+      if (lastPrice !== null) {
+        const change = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(2);
+        changeElem.textContent = `${change > 0 ? "+" : ""}${change}%`;
+        changeElem.style.color = change >= 0 ? "lightgreen" : "crimson";
+      }
+      priceElem.textContent = newPrice.toFixed(2);
+      lastPrice = newPrice;
+    }
+
+    function updateChart(dataPoints) {
+      priceHistory = [...dataPoints]; // Remplace l'ancien historique
+      const labels = priceHistory.map((p) =>
+        new Date(p.time).toLocaleTimeString()
+      );
+      const data = priceHistory.map((p) => p.value);
+
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("dyolarChart").getContext("2d");
+      chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Cours du DYOLAR",
+              data,
+              borderColor: "gold",
+              backgroundColor: "rgba(255,215,0,0.1)",
+              borderWidth: 2,
+              pointRadius: 4,
+              pointBackgroundColor: "white",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: { color: "gold" },
+              grid: { color: "#444" },
+            },
+            x: {
+              ticks: { color: "gold" },
+              grid: { color: "#444" },
+            },
+          },
+          plugins: {
+            legend: { labels: { color: "gold" } },
+          },
+        },
+      });
+    }
+
+    function claimAirdrop() {
+      const pseudo = document.getElementById("pseudo").value.trim();
+      const msg = document.getElementById("claimMsg");
+      if (!pseudo) {
+        msg.innerText = "Entre ton pseudo sacré, Disciple.";
+        msg.style.color = "crimson";
+        return;
+      }
+      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🚔`;
+      msg.style.color = "gold";
+    }
+
+    document.addEventListener("keydown", (e) => {
+      const secret = "DYOLISECRET";
+      window._secretBuffer = (window._secretBuffer || "") + e.key.toUpperCase();
+      if (window._secretBuffer.endsWith(secret)) {
+        const panel = document.getElementById("adminPanel");
+        panel.style.display = panel.style.display === "none" ? "block" : "none";
+        window._secretBuffer = "";
+      }
+    });
+
+    // Rafraîchir le prix toutes les 10 secondes
+    fetchPrice();
+    setInterval(fetchPrice, 10000);
+  </script>
+</body>
+</html>
+
       font-family: 'Arial', sans-serif;
       background-color: #0b0b0b;
       color: #f1f1f1;
