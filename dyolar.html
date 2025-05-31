@@ -33,6 +33,7 @@
       margin: 1em 0;
     }
     .change {
+      color: lightgreen;
       font-size: 0.8em;
       margin-left: 0.5em;
     }
@@ -55,17 +56,6 @@
       cursor: pointer;
       font-size: 1em;
       margin-top: 1em;
-    }
-    .timeframe-buttons {
-      margin-top: 1em;
-    }
-    .timeframe-buttons button {
-      margin: 0 0.3em;
-      padding: 0.4em 0.8em;
-      background: #333;
-      color: white;
-      border: 1px solid #888;
-      cursor: pointer;
     }
     .admin-panel {
       position: fixed;
@@ -94,19 +84,12 @@
   <div class="section">
     <h2>Cours actuel du $DYOLAR</h2>
     <p class="price">
-      1 DYOLAR = <span id="dyoprice">3.14</span> UPP
-      <span id="change" class="change">+0.00%</span>
+      1 DYOLAR = <span id="dyoprice">...</span> UPP
+      <span id="change" class="change"></span>
     </p>
 
     <div class="chart-container">
       <canvas id="dyolarChart"></canvas>
-    </div>
-
-    <div class="timeframe-buttons">
-      <button onclick="setTimeframe(1)">1h</button>
-      <button onclick="setTimeframe(24)">1j</button>
-      <button onclick="setTimeframe(72)">3j</button>
-      <button onclick="setTimeframe(168)">1 semaine</button>
     </div>
   </div>
 
@@ -129,123 +112,112 @@
     *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Gloire au D.
   </footer>
 
-  <script>
-    const priceEl = document.getElementById('dyoprice');
-    const changeEl = document.getElementById('change');
-    const ctx = document.getElementById('dyolarChart').getContext('2d');
-    let data = JSON.parse(localStorage.getItem("dyolarHistory")) || [];
-    let currentPrice = data.length ? data[data.length - 1].value : 3.14;
-    let currentRange = 24;
+<script>
+const priceEl = document.getElementById('dyoprice');
+const changeEl = document.getElementById('change');
+const ctx = document.getElementById('dyolarChart').getContext('2d');
+let data = [];
+let currentPrice = 0;
+let lastPrice = 0;
+const SUPABASE_URL = 'https://sxjocrdqiotmshssenyi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4am9jcmRxaW90bXNoc3NlbnlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTIxMjIsImV4cCI6MjA2NDI2ODEyMn0.WkRU3iXa832z3D2zRlNplXcqIu1EHnVmx_RK11q-yaM';
+const TABLE = 'dyolar_prices';
 
-    function saveData() {
-      localStorage.setItem("dyolarHistory", JSON.stringify(data));
-    }
+async function fetchPriceHistory() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*`, {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+    },
+  });
+  const json = await res.json();
+  data = json.sort((a, b) => new Date(a.time) - new Date(b.time));
+  if (data.length) {
+    lastPrice = data[data.length - 2]?.value || data[data.length - 1].value;
+    currentPrice = data[data.length - 1].value;
+  }
+  updateDisplay();
+  refreshChart();
+}
 
-    function updateDisplay() {
-      priceEl.textContent = currentPrice.toFixed(2);
-      const previousIndex = data.length >= 2 ? data.length - 2 : data.length - 1;
-      const lastReferencePoint = data[previousIndex]?.value || currentPrice;
-      const change = ((currentPrice - lastReferencePoint) / lastReferencePoint) * 100;
-      changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-      changeEl.style.color = change >= 0 ? 'lightgreen' : 'crimson';
-    }
+function updateDisplay() {
+  priceEl.textContent = currentPrice.toFixed(2);
+  const change = ((currentPrice - lastPrice) / lastPrice) * 100;
+  changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+  changeEl.style.color = change >= 0 ? 'lightgreen' : 'crimson';
+}
 
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: data.map(d => new Date(d.time).toLocaleTimeString()),
-        datasets: [{
-          label: 'Cours du DYOLAR',
-          data: data.map(d => d.value),
-          borderColor: 'gold',
-          backgroundColor: 'rgba(255, 215, 0, 0.2)',
-          tension: 0.3,
-          pointRadius: 0,
-        }]
+function refreshChart() {
+  chart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString());
+  chart.data.datasets[0].data = data.map(d => d.value);
+  chart.update();
+}
+
+async function setManualPrice() {
+  const input = parseFloat(document.getElementById("manualInput").value);
+  if (!isNaN(input)) {
+    lastPrice = currentPrice;
+    currentPrice = input;
+    await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
       },
-      options: {
-        scales: {
-          x: {
-            ticks: { color: 'white' }
-          },
-          y: {
-            beginAtZero: false,
-            ticks: { color: 'white' }
-          }
-        },
-        plugins: {
-          legend: {
-            labels: { color: 'gold' }
-          }
-        }
-      }
+      body: JSON.stringify({ value: currentPrice, time: new Date().toISOString() })
     });
+    await fetchPriceHistory();
+  }
+}
 
-    function refreshChart(hours = 24) {
-      const now = Date.now();
-      const filtered = data.filter(d => now - d.time <= hours * 60 * 60 * 1000);
-      chart.data.labels = filtered.map(d => new Date(d.time).toLocaleTimeString());
-      chart.data.datasets[0].data = filtered.map(d => d.value);
-      chart.update();
+function claimAirdrop() {
+  const pseudo = document.getElementById('pseudo').value.trim();
+  const msg = document.getElementById('claimMsg');
+  if (!pseudo) {
+    msg.innerText = "Entre ton pseudo sacré, Disciple.";
+    msg.style.color = "crimson";
+    return;
+  }
+  msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🛐`;
+  msg.style.color = "gold";
+}
+
+let secretBuffer = '';
+window.addEventListener('keydown', (e) => {
+  secretBuffer += e.key;
+  if (secretBuffer.length > 20) secretBuffer = secretBuffer.slice(-20);
+  if (secretBuffer.toUpperCase().includes("DYOLISECRET")) {
+    document.getElementById("adminPanel").style.display = "block";
+  }
+});
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Cours du DYOLAR',
+      data: [],
+      borderColor: 'gold',
+      backgroundColor: 'rgba(255, 215, 0, 0.2)',
+      tension: 0.3,
+      pointRadius: 0,
+    }]
+  },
+  options: {
+    scales: {
+      x: { ticks: { color: 'white' } },
+      y: { ticks: { color: 'white' } }
+    },
+    plugins: {
+      legend: { labels: { color: 'gold' } }
     }
+  }
+});
 
-    function addDataPoint(value) {
-      data.push({ time: Date.now(), value });
-      saveData();
-      refreshChart(currentRange);
-      updateDisplay();
-    }
-
-    function simulateFluctuation() {
-      const variation = (Math.random() - 0.5) * 0.2; // ±0.1 UPP
-      currentPrice += variation;
-      addDataPoint(currentPrice);
-    }
-
-    function setManualPrice() {
-      const newVal = parseFloat(document.getElementById("manualInput").value);
-      if (!isNaN(newVal)) {
-        currentPrice = newVal;
-        addDataPoint(currentPrice);
-      }
-    }
-
-    function claimAirdrop() {
-      const pseudo = document.getElementById('pseudo').value.trim();
-      const msg = document.getElementById('claimMsg');
-      if (!pseudo) {
-        msg.innerText = "Entre ton pseudo sacré, Disciple.";
-        msg.style.color = "crimson";
-        return;
-      }
-      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🛐`;
-      msg.style.color = "gold";
-    }
-
-    // Code secret DYOLISECRET (sans champ visible)
-    let secretBuffer = '';
-    window.addEventListener('keydown', (e) => {
-      secretBuffer += e.key;
-      if (secretBuffer.length > 20) secretBuffer = secretBuffer.slice(-20);
-      if (secretBuffer.toUpperCase().includes("DYOLISECRET")) {
-        document.getElementById("adminPanel").style.display = "block";
-      }
-    });
-
-    function setTimeframe(hours) {
-      currentRange = hours;
-      refreshChart(hours);
-    }
-
-    // Initialisation
-    if (data.length === 0) {
-      addDataPoint(currentPrice);
-    } else {
-      refreshChart(currentRange);
-      updateDisplay();
-    }
-
-    setInterval(simulateFluctuation, 30000);
-  </script>
+fetchPriceHistory();
+setInterval(fetchPriceHistory, 30000);
+</script>
 </body>
 </html>
