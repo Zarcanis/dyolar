@@ -148,7 +148,6 @@
 
     let chart;
     let lastPrice = null;
-    let priceHistory = [];
 
     async function fetchPrice() {
       try {
@@ -156,11 +155,9 @@
         const data = await res.json();
         if (!data.length) return;
 
-        // Met à jour le prix affiché avec le dernier point
         const lastPoint = data[data.length - 1];
         updateDisplayedPrice(parseFloat(lastPoint.price));
 
-        // Prépare les données du graphique
         const chartData = data.map((p) => ({
           value: parseFloat(p.price),
           time: p.time,
@@ -200,11 +197,10 @@
     }
 
     function updateChart(dataPoints) {
-      priceHistory = [...dataPoints]; // Remplace l'ancien historique
-      const labels = priceHistory.map((p) =>
+      const labels = dataPoints.map((p) =>
         new Date(p.time).toLocaleTimeString()
       );
-      const data = priceHistory.map((p) => p.value);
+      const data = dataPoints.map((p) => p.value);
 
       if (chart) chart.destroy();
       const ctx = document.getElementById("dyolarChart").getContext("2d");
@@ -248,27 +244,22 @@
       const pseudo = document.getElementById("pseudo").value.trim();
       const msg = document.getElementById("claimMsg");
       if (!pseudo) {
-        msg.innerText = "Entre ton pseudo sacré, Disciple.";
+        msg.textContent = "Merci d’entrer ton pseudo de BRO.";
         msg.style.color = "crimson";
         return;
       }
-      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🚔`;
-      msg.style.color = "gold";
+      msg.textContent = `BRAVO ${pseudo.toUpperCase()}, 69 DYOLAR t'ont été offerts ! 🔥🔥🔥`;
+      msg.style.color = "lightgreen";
     }
 
-    document.addEventListener("keydown", (e) => {
-      const secret = "DYOLISECRET";
-      window._secretBuffer = (window._secretBuffer || "") + e.key.toUpperCase();
-      if (window._secretBuffer.endsWith(secret)) {
-        const panel = document.getElementById("adminPanel");
-        panel.style.display = panel.style.display === "none" ? "block" : "none";
-        window._secretBuffer = "";
-      }
-    });
+    // Affiche le panneau admin si le paramètre URL ?admin=1 est présent
+    if (window.location.search.includes("admin=1")) {
+      document.getElementById("adminPanel").style.display = "block";
+    }
 
-    // Rafraîchir le prix toutes les 10 secondes
     fetchPrice();
-    setInterval(fetchPrice, 10000);
+    // Actualise toutes les 5 minutes
+    setInterval(fetchPrice, 300000);
   </script>
 </body>
 </html>
