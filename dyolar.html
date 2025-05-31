@@ -165,10 +165,15 @@
       const input = document.getElementById('manualPrice');
       const newPrice = parseFloat(input.value);
       if (!isNaN(newPrice)) {
-        await fetch(API_URL + "?action=set&price=" + newPrice);
-        updateDisplayedPrice(newPrice);
-        updateChart([{ value: newPrice, time: new Date().toISOString() }]);
-        input.value = '';
+        const res = await fetch(API_URL + `?action=set&price=${newPrice}`);
+        const text = await res.text();
+        if (text.trim() === "OK") {
+          updateDisplayedPrice(newPrice);
+          updateChart([{ value: newPrice, time: new Date().toISOString() }]);
+          input.value = '';
+        } else {
+          console.error("Erreur de mise à jour :", text);
+        }
       }
     }
 
@@ -236,7 +241,6 @@
       msg.style.color = "gold";
     }
 
-    // Activation adminPanel avec le mot secret
     document.addEventListener('keydown', (e) => {
       const secret = 'DYOLISECRET';
       window._secretBuffer = (window._secretBuffer || '') + e.key.toUpperCase();
@@ -246,7 +250,6 @@
       }
     });
 
-    // Lancement
     fetchPrice();
   </script>
 </body>
