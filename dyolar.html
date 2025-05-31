@@ -3,227 +3,149 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DYOLAR - Suivi Divin</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>DYOLAR - La Monnaie Sacrée</title>
   <style>
     body {
-      font-family: 'Courier New', Courier, monospace;
-      background-color: #111;
-      color: gold;
+      font-family: 'Arial', sans-serif;
+      background-color: #0b0b0b;
+      color: #f1f1f1;
+      margin: 0;
+      padding: 0;
       text-align: center;
-      padding: 20px;
     }
-    canvas {
-      background-color: #222;
-      border: 2px solid gold;
-      border-radius: 8px;
-      margin-bottom: 20px;
+    header {
+      padding: 2em;
+      background: #111;
+      border-bottom: 3px solid gold;
     }
-    input, button, select {
-      margin: 10px;
-      padding: 10px;
-      background-color: #222;
+    h1 {
+      font-size: 2.5em;
       color: gold;
-      border: 1px solid gold;
-      border-radius: 5px;
+    }
+    .section {
+      padding: 2em 1em;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .price {
+      font-size: 2em;
+      margin: 1em 0;
+    }
+    .change {
+      color: lightgreen;
+      font-size: 0.8em;
+      margin-left: 0.5em;
+    }
+    .chart-container {
+      position: relative;
+      margin: 1em auto;
+      width: 80%;
+      max-width: 800px;
+      height: 300px;
+    }
+    .airdrop {
+      background: #222;
+      border: 2px dashed gold;
+      padding: 2em;
+      margin: 2em 0;
+    }
+    .btn {
+      background: gold;
+      color: black;
+      padding: 0.8em 1.5em;
+      border: none;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 1em;
+    }
+    .testimonials {
+      font-style: italic;
+      margin-top: 1em;
+    }
+    footer {
+      background: #111;
+      padding: 1em;
+      font-size: 0.9em;
+      color: #999;
     }
     #adminPanel {
       display: none;
-      margin-top: 20px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #111;
+      border-top: 2px solid gold;
+      padding: 1em;
     }
-    .airdrop-section {
-      margin-top: 20px;
+    #adminPanel input {
+      padding: 0.5em;
+      width: 80px;
     }
-    .leaderboard {
-      margin-top: 20px;
+    .time-range {
+      margin: 1em 0;
+    }
+    .time-range button {
+      background: #444;
       color: gold;
+      margin: 0 0.5em;
+      border: 1px solid gold;
+      padding: 0.4em 0.8em;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>DYOLAR - Système de valeur sacrée</h1>
-  <div id="priceDisplay"></div>
-  <canvas id="dyolarChart" width="600" height="300"></canvas>
-  
-  <div>
-    <button onclick="refreshChart('1h')">1H</button>
-    <button onclick="refreshChart('24h')">24H</button>
-    <button onclick="refreshChart('7d')">7J</button>
-    <button onclick="refreshChart('all')">TOUT</button>
+  <header>
+    <h1>💰 DYOLAR : La Crypto-monnaie du DYOLISSIME</h1>
+    <p>Rejoins la COMMU des Crypto BROS !</p>
+  </header>
+
+  <div class="section">
+    <h2>Cours actuel du $DYOLAR</h2>
+    <p class="price">
+      1 DYOLAR = <span id="dyoprice">3.14</span> UPP*
+      <span class="change" id="dyochange">+0.00%</span>
+    </p>
+
+    <div class="time-range">
+      <button onclick="setTimeRange(1)">1h</button>
+      <button onclick="setTimeRange(24)">1j</button>
+      <button onclick="setTimeRange(72)">3j</button>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="dyolarChart"></canvas>
+    </div>
   </div>
 
-  <div class="airdrop-section">
-    <input type="text" id="pseudoInput" placeholder="Ton pseudo MyHordes">
-    <button onclick="claimAirdrop()">Réclamer 1 DYOLAR</button>
-    <div id="airdropMessage"></div>
+  <div class="section airdrop">
+    <h2>🔥 Airdrop Sacré !</h2>
+    <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
+    <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
+    <br>
+    <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
+    <p id="claimMsg"></p>
   </div>
+
+  <div class="section testimonials">
+    <p>"Depuis que j’ai investi dans le DYOLAR, mes rêves sont devenus des T-poses." — @JeanBRO</p>
+    <p>"Ma poule m’a dit d’acheter encore." — @ProphBRO</p>
+  </div>
+
+  <footer>
+    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+  </footer>
 
   <div id="adminPanel">
-    <h2>Panneau divinatoire</h2>
-    <input type="number" id="manualInput" placeholder="Nouveau cours DYOLAR">
-    <button onclick="setManualPrice()">Définir manuellement</button>
+    <label for="manualPrice">Nouveau cours :</label>
+    <input type="number" id="manualPrice" step="0.01">
+    <button onclick="setManualPrice()">Appliquer</button>
   </div>
 
-  <div class="leaderboard">
-    <h2>Classement des illuminés</h2>
-    <ul id="leaderboardList"></ul>
-  </div>
-
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-    const supabase = createClient('https://xxx.supabase.co', 'public-anon-key'); // Remplace par tes infos
-    const priceTable = 'dyolar_prices';
-    const airdropTable = 'airdrops';
-
-    let data = [];
-    let currentPrice = 1.0;
-    let lastSavedPrice = 1.0;
-    let chart;
-
-    async function loadData() {
-      const { data: prices, error } = await supabase
-        .from(priceTable)
-        .select('*')
-        .order('timestamp', { ascending: true });
-
-      if (error) console.error(error);
-      else {
-        data = prices.map(p => ({ time: new Date(p.timestamp).getTime(), value: p.price }));
-        if (data.length > 0) {
-          currentPrice = data[data.length - 1].value;
-          lastSavedPrice = currentPrice;
-        }
-      }
-    }
-
-    function updateDisplay() {
-      const diff = ((currentPrice - lastSavedPrice) / lastSavedPrice) * 100;
-      const display = document.getElementById("priceDisplay");
-      display.innerHTML = `Cours actuel : <strong>${currentPrice.toFixed(2)}</strong> DYOLAR ` +
-        `(variation : ${diff.toFixed(2)}%)`;
-    }
-
-    function refreshChart(range = 'all') {
-      const now = Date.now();
-      let filtered = data;
-      if (range !== 'all') {
-        let duration = {
-          '1h': 3600000,
-          '24h': 86400000,
-          '7d': 604800000
-        }[range];
-        filtered = data.filter(p => now - p.time <= duration);
-      }
-      const ctx = document.getElementById('dyolarChart').getContext('2d');
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: filtered.map(p => new Date(p.time).toLocaleString()),
-          datasets: [{
-            label: 'DYOLAR',
-            data: filtered.map(p => p.value),
-            borderColor: 'gold',
-            backgroundColor: 'rgba(255, 215, 0, 0.1)',
-            fill: true
-          }]
-        },
-        options: {
-          scales: {
-            x: { ticks: { color: 'gold' } },
-            y: { ticks: { color: 'gold' } }
-          }
-        }
-      });
-    }
-
-    async function addPriceToDB(price) {
-      const { error } = await supabase.from(priceTable).insert({ price });
-      if (error) console.error(error);
-    }
-
-    async function claimAirdrop() {
-      const pseudoInput = document.getElementById("pseudoInput");
-      const pseudo = pseudoInput.value.trim().toUpperCase();
-      const msg = document.getElementById("airdropMessage");
-
-      if (!pseudo || !/^[A-Z0-9_]+$/.test(pseudo)) {
-        msg.textContent = "Pseudo invalide : lettres, chiffres, _ uniquement.";
-        msg.style.color = 'crimson';
-        return;
-      }
-
-      const { data: existing } = await supabase
-        .from(airdropTable)
-        .select('*')
-        .eq('pseudo', pseudo);
-
-      if (existing.length > 0) {
-        msg.textContent = `Tu as déjà reçu 1 DYOLAR, frère ${pseudo}.`;
-        msg.style.color = 'orange';
-        return;
-      }
-
-      await supabase.from(airdropTable).insert({ pseudo });
-      msg.textContent = `1 DYOLAR sacré t’a été attribué, ${pseudo}`;
-      msg.style.color = 'lightgreen';
-      pseudoInput.value = "";
-
-      if (pseudo === "DYOLISSIME") {
-        document.getElementById("adminPanel").style.display = "block";
-      }
-
-      loadLeaderboard();
-    }
-
-    async function setManualPrice() {
-      const input = document.getElementById('manualInput');
-      const newPrice = parseFloat(input.value);
-      if (isNaN(newPrice) || newPrice <= 0) {
-        alert("Prix invalide");
-        return;
-      }
-      currentPrice = newPrice;
-      data.push({ time: Date.now(), value: newPrice });
-      lastSavedPrice = newPrice;
-      updateDisplay();
-      refreshChart();
-      await addPriceToDB(newPrice);
-      input.value = '';
-    }
-
-    async function fluctuatePrice() {
-      const variation = (Math.random() - 0.5) * 0.02;
-      const newPrice = Math.max(0.01, currentPrice * (1 + variation));
-      currentPrice = newPrice;
-      data.push({ time: Date.now(), value: newPrice });
-      lastSavedPrice = newPrice;
-      await addPriceToDB(newPrice);
-      updateDisplay();
-      refreshChart();
-    }
-
-    async function loadLeaderboard() {
-      const { data: rows } = await supabase
-        .from(airdropTable)
-        .select('pseudo', { count: 'exact' });
-      const list = document.getElementById("leaderboardList");
-      list.innerHTML = "";
-      rows.forEach(r => {
-        const li = document.createElement('li');
-        li.textContent = r.pseudo;
-        list.appendChild(li);
-      });
-    }
-
-    window.onload = async function () {
-      await loadData();
-      updateDisplay();
-      refreshChart();
-      loadLeaderboard();
-      setInterval(fluctuatePrice, 10 * 60 * 1000); // fluctue toutes les 10 minutes
-    };
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Le script JavaScript complet sera ajouté ici
   </script>
 </body>
 </html>
