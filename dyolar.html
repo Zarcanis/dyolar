@@ -91,7 +91,7 @@
       margin: 0 0.5em;
       border: 1px solid gold;
       padding: 0.4em 0.8em;
-      cursor: pointer;
+      cursor: default;
     }
   </style>
 </head>
@@ -109,9 +109,7 @@
     </p>
 
     <div class="time-range">
-      <button onclick="setTimeRange(1)">1h</button>
-      <button onclick="setTimeRange(24)">1j</button>
-      <button onclick="setTimeRange(72)">3j</button>
+      <button>1 jour</button>
     </div>
 
     <div class="chart-container">
@@ -146,34 +144,22 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     let dyoprice = 3.14;
-    let displayRangeHours = 1;
-    let priceHistory = JSON.parse(localStorage.getItem('priceHistory')) || [];
-
-    function addPricePoint(price, isManual = false) {
-      const now = new Date();
-      priceHistory.push({ time: now.toISOString(), value: price, manual: isManual });
-      localStorage.setItem('priceHistory', JSON.stringify(priceHistory));
-      updateDisplayedPrice(price);
-      updateChart();
-    }
+    let tempDyoprice = dyoprice;
+    let officialPriceHistory = JSON.parse(localStorage.getItem('officialPriceHistory')) || [];
 
     function updateDisplayedPrice(newPrice) {
-      const oldPrice = dyoprice;
-      dyoprice = newPrice;
-      const change = (((dyoprice - oldPrice) / oldPrice) * 100).toFixed(2);
-      document.getElementById('dyoprice').textContent = dyoprice.toFixed(2);
+      const oldPrice = tempDyoprice;
+      tempDyoprice = newPrice;
+      const change = (((tempDyoprice - oldPrice) / oldPrice) * 100).toFixed(2);
+      document.getElementById('dyoprice').textContent = tempDyoprice.toFixed(2);
       const changeElem = document.getElementById('dyochange');
       changeElem.textContent = `${change > 0 ? '+' : ''}${change}%`;
       changeElem.style.color = change >= 0 ? 'lightgreen' : 'crimson';
     }
 
-    function setManualPrice() {
-      const input = document.getElementById('manualPrice');
-      const newPrice = parseFloat(input.value);
-      if (!isNaN(newPrice)) {
-        addPricePoint(newPrice, true);
-        input.value = '';
-      }
+    function generateAutoFluctuation() {
+      const variation = (Math.random() * 0.14 + 0.01) * (Math.random() < 0.5 ? -1 : 1);
+      updateDisplayedPrice(tempDyoprice + variation);
     }
 
     function claimAirdrop() {
@@ -184,30 +170,28 @@
         msg.style.color = "crimson";
         return;
       }
-      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🚐`;
+      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🚔`;
       msg.style.color = "gold";
     }
 
-    function generateAutoFluctuation() {
-      const variation = (Math.random() * 0.14 + 0.01) * (Math.random() < 0.5 ? -1 : 1);
-      if (displayRangeHours === 1) {
-        addPricePoint(dyoprice + variation);
-      } else {
-        updateDisplayedPrice(dyoprice + variation);
+    function setManualPrice() {
+      const input = document.getElementById('manualPrice');
+      const newPrice = parseFloat(input.value);
+      if (!isNaN(newPrice)) {
+        const now = new Date().toISOString();
+        officialPriceHistory.push({ time: now, value: newPrice });
+        localStorage.setItem('officialPriceHistory', JSON.stringify(officialPriceHistory));
+        tempDyoprice = newPrice;
+        updateDisplayedPrice(tempDyoprice);
+        updateChart();
+        input.value = '';
       }
     }
 
-    setInterval(generateAutoFluctuation, 30000);
-
     let chart;
     function updateChart() {
-      const now = new Date();
-      const filtered = priceHistory.filter(p => {
-        const time = new Date(p.time);
-        return (now - time) <= displayRangeHours * 60 * 60 * 1000;
-      });
-      const labels = filtered.map(p => new Date(p.time).toLocaleTimeString());
-      const data = filtered.map(p => p.value);
+      const labels = officialPriceHistory.map(p => new Date(p.time).toLocaleDateString());
+      const data = officialPriceHistory.map(p => p.value);
       if (chart) chart.destroy();
       const ctx = document.getElementById('dyolarChart').getContext('2d');
       chart = new Chart(ctx, {
@@ -215,12 +199,12 @@
         data: {
           labels,
           datasets: [{
-            label: 'Cours du DYOLAR',
+            label: 'Cours du DYOLAR (1j)',
             data,
             borderColor: 'gold',
             backgroundColor: 'rgba(255,215,0,0.1)',
             borderWidth: 2,
-            pointRadius: 2,
+            pointRadius: 4,
             pointBackgroundColor: 'white'
           }]
         },
@@ -244,11 +228,6 @@
       });
     }
 
-    function setTimeRange(hours) {
-      displayRangeHours = hours;
-      updateChart();
-    }
-
     document.addEventListener('keydown', (e) => {
       const secret = 'DYOLISECRET';
       window._secretBuffer = (window._secretBuffer || '') + e.key.toUpperCase();
@@ -258,13 +237,15 @@
       }
     });
 
-    if (priceHistory.length === 0) {
-      addPricePoint(dyoprice, true);
-    } else {
-      dyoprice = priceHistory[priceHistory.length - 1].value;
-      updateDisplayedPrice(dyoprice);
-      updateChart();
+    if (officialPriceHistory.length === 0) {
+      const now = new Date().toISOString();
+      officialPriceHistory.push({ time: now, value: dyoprice });
+      localStorage.setItem('officialPriceHistory', JSON.stringify(officialPriceHistory));
     }
+    tempDyoprice = officialPriceHistory[officialPriceHistory.length - 1].value;
+    updateDisplayedPrice(tempDyoprice);
+    updateChart();
+    setInterval(generateAutoFluctuation, 30000);
   </script>
 </body>
 </html>
