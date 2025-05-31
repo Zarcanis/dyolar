@@ -104,8 +104,8 @@
   <div class="section">
     <h2>Cours actuel du $DYOLAR</h2>
     <p class="price">
-      1 DYOLAR = <span id="dyoprice">3.14</span> UPP*
-      <span class="change" id="dyochange">+0.00%</span>
+      1 DYOLAR = <span id="dyoprice">...</span> UPP*
+      <span class="change" id="dyochange"></span>
     </p>
 
     <div class="time-range">
@@ -143,55 +143,51 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    let dyoprice = 3.14;
-    let tempDyoprice = dyoprice;
-    let officialPriceHistory = JSON.parse(localStorage.getItem('officialPriceHistory')) || [];
+    const API_URL = "https://script.google.com/macros/s/AKfycbw7EtXzo0-dPSM7SleKCucCoi3GMs3OfDTwcINM2Q83L2_YFaIIne2nKmULEuOzKMFk/exec";
+    let chart;
+    let lastPrice = null;
+    let priceHistory = [];
 
-    function updateDisplayedPrice(newPrice) {
-      const oldPrice = tempDyoprice;
-      tempDyoprice = newPrice;
-      const change = (((tempDyoprice - oldPrice) / oldPrice) * 100).toFixed(2);
-      document.getElementById('dyoprice').textContent = tempDyoprice.toFixed(2);
-      const changeElem = document.getElementById('dyochange');
-      changeElem.textContent = `${change > 0 ? '+' : ''}${change}%`;
-      changeElem.style.color = change >= 0 ? 'lightgreen' : 'crimson';
-    }
-
-    function generateAutoFluctuation() {
-      const variation = (Math.random() * 0.14 + 0.01) * (Math.random() < 0.5 ? -1 : 1);
-      updateDisplayedPrice(tempDyoprice + variation);
-    }
-
-    function claimAirdrop() {
-      const pseudo = document.getElementById('pseudo').value.trim();
-      const msg = document.getElementById('claimMsg');
-      if (!pseudo) {
-        msg.innerText = "Entre ton pseudo sacré, Disciple.";
-        msg.style.color = "crimson";
-        return;
+    async function fetchPrice() {
+      try {
+        const res = await fetch(API_URL + "?action=get");
+        const data = await res.json();
+        const price = parseFloat(data.price);
+        const time = data.time;
+        updateDisplayedPrice(price);
+        updateChart([{ value: price, time }]);
+      } catch (e) {
+        console.error("Erreur de récupération du prix :", e);
       }
-      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🚔`;
-      msg.style.color = "gold";
     }
 
-    function setManualPrice() {
+    async function setManualPrice() {
       const input = document.getElementById('manualPrice');
       const newPrice = parseFloat(input.value);
       if (!isNaN(newPrice)) {
-        const now = new Date().toISOString();
-        officialPriceHistory.push({ time: now, value: newPrice });
-        localStorage.setItem('officialPriceHistory', JSON.stringify(officialPriceHistory));
-        tempDyoprice = newPrice;
-        updateDisplayedPrice(tempDyoprice);
-        updateChart();
+        await fetch(API_URL + "?action=set&price=" + newPrice);
+        updateDisplayedPrice(newPrice);
+        updateChart([{ value: newPrice, time: new Date().toISOString() }]);
         input.value = '';
       }
     }
 
-    let chart;
-    function updateChart() {
-      const labels = officialPriceHistory.map(p => new Date(p.time).toLocaleDateString());
-      const data = officialPriceHistory.map(p => p.value);
+    function updateDisplayedPrice(newPrice) {
+      const priceElem = document.getElementById('dyoprice');
+      const changeElem = document.getElementById('dyochange');
+      if (lastPrice !== null) {
+        const change = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(2);
+        changeElem.textContent = `${change > 0 ? '+' : ''}${change}%`;
+        changeElem.style.color = change >= 0 ? 'lightgreen' : 'crimson';
+      }
+      priceElem.textContent = newPrice.toFixed(2);
+      lastPrice = newPrice;
+    }
+
+    function updateChart(dataPoints) {
+      priceHistory.push(...dataPoints);
+      const labels = priceHistory.map(p => new Date(p.time).toLocaleTimeString());
+      const data = priceHistory.map(p => p.value);
       if (chart) chart.destroy();
       const ctx = document.getElementById('dyolarChart').getContext('2d');
       chart = new Chart(ctx, {
@@ -199,7 +195,7 @@
         data: {
           labels,
           datasets: [{
-            label: 'Cours du DYOLAR (1j)',
+            label: 'Cours du DYOLAR',
             data,
             borderColor: 'gold',
             backgroundColor: 'rgba(255,215,0,0.1)',
@@ -228,6 +224,19 @@
       });
     }
 
+    function claimAirdrop() {
+      const pseudo = document.getElementById('pseudo').value.trim();
+      const msg = document.getElementById('claimMsg');
+      if (!pseudo) {
+        msg.innerText = "Entre ton pseudo sacré, Disciple.";
+        msg.style.color = "crimson";
+        return;
+      }
+      msg.innerText = `Béni sois-tu, ${pseudo} ! Tu as reçu 69 DYOLARS. 🚔`;
+      msg.style.color = "gold";
+    }
+
+    // Activation adminPanel avec le mot secret
     document.addEventListener('keydown', (e) => {
       const secret = 'DYOLISECRET';
       window._secretBuffer = (window._secretBuffer || '') + e.key.toUpperCase();
@@ -237,15 +246,8 @@
       }
     });
 
-    if (officialPriceHistory.length === 0) {
-      const now = new Date().toISOString();
-      officialPriceHistory.push({ time: now, value: dyoprice });
-      localStorage.setItem('officialPriceHistory', JSON.stringify(officialPriceHistory));
-    }
-    tempDyoprice = officialPriceHistory[officialPriceHistory.length - 1].value;
-    updateDisplayedPrice(tempDyoprice);
-    updateChart();
-    setInterval(generateAutoFluctuation, 30000);
+    // Lancement
+    fetchPrice();
   </script>
 </body>
 </html>
