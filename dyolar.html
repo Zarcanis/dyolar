@@ -151,7 +151,9 @@
       "https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec";
 
     let chart;
-    let lastPrice = null;
+    // Essaie de récupérer la dernière valeur stockée dans localStorage au démarrage
+    let lastPrice = localStorage.getItem("lastPrice") ? parseFloat(localStorage.getItem("lastPrice")) : null;
+    let lastPriceFromData = null;
 
     async function fetchPrice() {
       try {
@@ -159,16 +161,30 @@
         const data = await res.json();
         if (!data.length) return;
 
-        const lastPoint = data[data.length - 1];
-        updateDisplayedPrice(parseFloat(lastPoint.price));
-
-        const chartData = data.map((p) => ({
+        // Transformation et tri des données par date croissante (au cas où)
+        data.sort((a,b) => new Date(a.time) - new Date(b.time));
+        const chartData = data.map(p => ({
           value: parseFloat(p.price),
           time: p.time,
         }));
+
+        // Dernier prix de la source de données
+        lastPriceFromData = chartData[chartData.length - 1].value;
+
         updateChart(chartData);
+
+        // Mise à jour de l'affichage du prix et de la variation
+        updateDisplayedPrice(lastPriceFromData);
+
+        // Sauvegarder dans localStorage pour persistance
+        localStorage.setItem("lastPrice", lastPriceFromData.toFixed(2));
+
       } catch (e) {
         console.error("Erreur de récupération du prix :", e);
+        // En cas d'erreur réseau, on affiche la dernière valeur connue
+        if(lastPrice !== null) {
+          updateDisplayedPrice(lastPrice);
+        }
       }
     }
 
@@ -189,9 +205,12 @@
           adminMsg.style.color = "lightgreen";
           adminMsg.textContent = `Prix mis à jour à ${newPrice.toFixed(2)} UPP !`;
           updateDisplayedPrice(newPrice);
+          localStorage.setItem("lastPrice", newPrice.toFixed(2));
           priceInput.value = "";
           setTimeout(() => {
             closeAdminPanel();
+            // On force une actualisation des données
+            fetchPrice();
           }, 2000);
         } else {
           adminMsg.style.color = "crimson";
@@ -208,13 +227,19 @@
     function updateDisplayedPrice(newPrice) {
       const priceElem = document.getElementById("dyoprice");
       const changeElem = document.getElementById("dyochange");
-      if (lastPrice !== null) {
+
+      if (lastPrice !== null && lastPrice !== newPrice) {
+        // Calculer la variation relative entre lastPrice (ancienne valeur) et newPrice (nouvelle)
         const change = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(2);
         changeElem.textContent = `${change > 0 ? "+" : ""}${change}%`;
         changeElem.style.color = change >= 0 ? "lightgreen" : "crimson";
+      } else if (lastPrice === newPrice) {
+        changeElem.textContent = "0.00%";
+        changeElem.style.color = "gray";
       } else {
         changeElem.textContent = "";
       }
+
       priceElem.textContent = newPrice.toFixed(2);
       lastPrice = newPrice;
     }
@@ -309,7 +334,10 @@
       toggleAdminPanel(false);
     }
 
-    // Initialisation
+    // Initialisation : on charge la donnée depuis localStorage avant d'appeler l'API
+    if (lastPrice !== null) {
+      updateDisplayedPrice(lastPrice);
+    }
     fetchPrice();
     setInterval(fetchPrice, 60 * 1000); // mise à jour toutes les minutes
   </script>
