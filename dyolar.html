@@ -1,452 +1,216 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DYOLAR - La Monnaie Sacrée</title>
+  <meta charset="UTF-8">
+  <title>DYOLAR TRACKER</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #0b0b0b;
-      color: #f1f1f1;
-      margin: 0;
-      padding: 0;
+      background-color: #111;
+      color: white;
+      font-family: monospace;
       text-align: center;
-    }
-    header {
-      padding: 2em;
-      background: #111;
-      border-bottom: 3px solid gold;
+      padding: 20px;
     }
     h1 {
-      font-size: 2.5em;
+      font-size: 3em;
       color: gold;
-      margin: 0;
     }
-    .section {
-      padding: 2em 1em;
+    #dyolarValue {
+      font-size: 4em;
+      margin: 20px 0;
+      color: #0f0;
+    }
+    #chartContainer {
+      width: 90%;
       max-width: 800px;
-      margin: 0 auto;
+      margin: 0 auto 30px;
     }
-    .price-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1em; /* espace entre image et texte */
-      margin: 1em 0;
+    #airdropZone {
+      margin-top: 40px;
     }
-    .price-container img {
-      width: 50px; /* ajuste selon la taille souhaitée */
-      height: auto;
+    input[type="text"] {
+      padding: 10px;
+      font-size: 1.2em;
     }
-    .price {
-      font-size: 2em;
-      margin: 0; /* l’espacement principal est géré par .price-container */
-    }
-    .change {
-      font-size: 0.8em;
-      margin-left: 0.5em;
-    }
-    .chart-container {
-      position: relative;
-      margin: 1em auto;
-      width: 80%;
-      max-width: 800px;
-      height: 300px;
-    }
-    .airdrop {
-      background: #222;
-      border: 2px dashed gold;
-      padding: 2em;
-      margin: 2em 0;
-    }
-    .btn {
-      background: gold;
-      color: black;
-      padding: 0.8em 1.5em;
+    button {
+      padding: 10px 20px;
+      font-size: 1.2em;
+      background-color: gold;
       border: none;
       cursor: pointer;
-      font-size: 1em;
-      margin-top: 1em;
-    }
-    .testimonials {
-      font-style: italic;
-      margin-top: 1em;
-    }
-    footer {
-      background: #111;
-      padding: 1em;
-      font-size: 0.9em;
-      color: #999;
+      margin-left: 10px;
     }
     #adminPanel {
-      display: none;
       position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: #111;
-      border-top: 2px solid gold;
-      padding: 1em;
-      text-align: center;
-      z-index: 1000;
+      top: 20px;
+      right: 20px;
+      background-color: #222;
+      padding: 15px;
+      border: 2px solid gold;
+      display: none;
     }
     #adminPanel input {
-      padding: 0.5em;
-      width: 150px;
-      font-size: 1em;
+      width: 80px;
+      padding: 5px;
     }
     #adminPanel button {
-      background: gold;
-      color: black;
-      padding: 0.5em 1em;
-      border: none;
-      cursor: pointer;
-      font-size: 1em;
-      margin-left: 0.5em;
+      margin-top: 10px;
     }
-    #adminPanel button.close-btn {
-      background: crimson;
-      color: white;
-      margin-left: 1em;
+    #claimMsg, #adminMsg {
+      margin-top: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>💰 DYOLAR : La Crypto-monnaie du DYOLISSIME</h1>
-    <p>Rejoins la COMMU des Crypto BROS !</p>
-  </header>
-
-  <div class="section">
-    <h2>Cours actuel du $DYOLAR</h2>
-
-    <!-- Conteneur flex pour placer l’image à gauche, le prix au centre, l’image à droite -->
-    <div class="price-container">
-      <img
-        src="https://drive.google.com/uc?export=view&amp;id=1JXw1W6n-i0i9MWGMPZJGBwk9XcRLek9d"
-        alt="Logo Dyolar Gauche"
-      />
-      <p class="price">
-        1 DYOLAR = <span id="dyoprice">…</span> UPP *
-        <span class="change" id="dyochange"></span>
-      </p>
-      <img
-        src="https://drive.google.com/uc?export=view&amp;id=1JXw1W6n-i0i9MWGMPZJGBwk9XcRLek9d"
-        alt="Logo Dyolar Droite"
-      />
-    </div>
-
-    <div class="chart-container">
-      <canvas id="dyolarChart"></canvas>
-    </div>
+  <h1>📈 DYOLAR TRACKER</h1>
+  <div id="dyolarValue">-- DYOL</div>
+  <div id="chartContainer">
+    <canvas id="dyolarChart"></canvas>
+  </div>
+  <div id="airdropZone">
+    <h2>Réclame ton airdrop</h2>
+    <input type="text" id="pseudo" placeholder="Ton nom de BRO">
+    <button onclick="claimAirdrop()">Réclamer 69 DYOLARS</button>
+    <div id="claimMsg"></div>
   </div>
 
-  <div class="section airdrop">
-    <h2>🔥 Airdrop Sacré !</h2>
-    <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
-    <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <br />
-    <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
-    <p id="claimMsg"></p>
-  </div>
-
-  <div class="section testimonials">
-    <p>"Depuis que j’ai investi dans le DYOLAR, mes rêves sont devenus des T-poses." — @JeanBRO</p>
-    <p>"Ma poule m’a dit d’acheter encore." — @ProphBRO</p>
-  </div>
-
-  <footer>
-    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
-  </footer>
-
-  <!-- Panneau admin secret "dyolisecret" -->
   <div id="adminPanel">
-    <input
-      type="number"
-      id="manualPrice"
-      step="0.01"
-      min="0"
-      placeholder="Nouveau cours DYOLAR"
-    />
-    <button onclick="setManualPrice()">Appliquer</button>
-    <button class="close-btn" onclick="closeAdminPanel()">Fermer</button>
-    <p id="adminMsg" style="margin-top:0.5em; color:lightgreen;"></p>
+    <h3>Admin DYOLISSIME</h3>
+    <input type="number" step="0.01" id="manualPrice" placeholder="Prix">
+    <button onclick="setManualPrice()">Set Prix</button>
+    <button onclick="closeAdminPanel()">Fermer</button>
+    <div id="adminMsg"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // → Remplacez par VOTRE URL d’Apps Script déployé en Web App
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec";
+    const API_URL = "https://dyolar.horde.tools";
 
-    let chart = null;
-
-    // Dernier prix affiché (en fallback si offline)
-    let lastPrice = localStorage.getItem("lastPrice")
-      ? parseFloat(localStorage.getItem("lastPrice"))
-      : null;
-
-    // Dernier cours journalier (clôture d'hier), en fallback
-    let yesterdayPrice = localStorage.getItem("yesterdayPrice")
-      ? parseFloat(localStorage.getItem("yesterdayPrice"))
-      : null;
-
-    // Récupère les 100 dernières lignes depuis le Sheet, calcule cours de clôture journaliers,
-    // met à jour le graphique & affiche le prix + % de variation
     async function fetchPrice() {
       try {
-        const res = await fetch(API_URL + "?action=get&maxRows=100");
-        const rawData = await res.json();
-        if (!Array.isArray(rawData) || rawData.length === 0) {
-          console.warn("Aucune donnée reçue de l'API");
-          return;
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        if (data && data.current) {
+          document.getElementById("dyolarValue").textContent = `${data.current} DYOL`;
+          updateChart(data.history);
         }
-
-        // 1) Forcer le séparateur décimal en point (ex. "3,14" → "3.14")
-        const allData = rawData
-          .map(r => {
-            let p = r.price;
-            if (typeof p === "string" && p.includes(",")) {
-              p = p.replace(",", ".");
-            }
-            return {
-              value: parseFloat(p),
-              time: r.time
-            };
-          })
-          // 2) Tri chronologique croissant (au cas où l'API renvoie dans le désordre)
-          .sort((a, b) => new Date(a.time) - new Date(b.time));
-
-        // 3) Calculer le cours de clôture de chaque jour (dernier prix par date)
-        const dailyMap = {};
-        allData.forEach(pt => {
-          const dateKey = new Date(pt.time).toISOString().split("T")[0];
-          if (
-            !dailyMap[dateKey] ||
-            new Date(pt.time) > new Date(dailyMap[dateKey].time)
-          ) {
-            dailyMap[dateKey] = pt;
-          }
-        });
-        // 4) Transformer en array trié par date ascendante
-        const dailyArray = Object.values(dailyMap).sort(
-          (a, b) => new Date(a.time) - new Date(b.time)
-        );
-
-        // 5) Conserver les 5 derniers jours
-        const last5Days = dailyArray.slice(
-          Math.max(dailyArray.length - 5, 0)
-        );
-
-        // 6) Mettre à jour le graphique avec ces 5 clôtures quotidiennes
-        updateChart(last5Days);
-
-        // 7) Le prix “à l’instant T” est la clôture la plus récente
-        const todayPrice = dailyArray[dailyArray.length - 1].value;
-        // Récupérer le cours de clôture d’hier (avant-dernier)
-        if (dailyArray.length >= 2) {
-          yesterdayPrice = dailyArray[dailyArray.length - 2].value;
-          localStorage.setItem(
-            "yesterdayPrice",
-            yesterdayPrice.toFixed(2)
-          );
-        }
-
-        // 8) Afficher le prix + % de variation
-        updateDisplayedPrice(todayPrice, yesterdayPrice);
-
-        // 9) Stocker dans localStorage pour fallback en cas d’erreur réseau
-        localStorage.setItem("lastPrice", todayPrice.toFixed(2));
       } catch (err) {
-        console.error("Erreur lors du fetchPrice :", err);
-        // Si réseau HS, on affiche la dernière valeur connue + variation par rapport à yesterdayPrice fallback
-        if (lastPrice !== null) {
-          updateDisplayedPrice(lastPrice, yesterdayPrice);
-        }
+        console.error("Erreur de récupération du prix:", err);
       }
     }
 
-    // Met à jour l’affichage du prix et du % quotidien
-    // newPrice = prix à afficher, yPrice = clôture d’hier (ou null en fallback)
-    function updateDisplayedPrice(newPrice, yPrice) {
-      const priceElem = document.getElementById("dyoprice");
-      const changeElem = document.getElementById("dyochange");
-      let variationText = "";
-      let color = "gray";
+    let chart;
 
-      if (yPrice !== null) {
-        // Calculer % par rapport à yPrice
-        const pct = (((newPrice - yPrice) / yPrice) * 100).toFixed(2);
-        variationText = (pct >= 0 ? "+" : "") + pct + "%";
-        color = pct >= 0 ? "lightgreen" : "crimson";
-      } else if (lastPrice !== null && lastPrice !== newPrice) {
-        // Fallback : comparer newPrice au dernierPrice
-        const pct2 = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(2);
-        variationText = (pct2 >= 0 ? "+" : "") + pct2 + "%";
-        color = pct2 >= 0 ? "lightgreen" : "crimson";
-      } else if (lastPrice === newPrice) {
-        variationText = "0.00%";
-        color = "gray";
-      }
-
-      priceElem.textContent = newPrice.toFixed(2);
-      changeElem.textContent = variationText;
-      changeElem.style.color = color;
-      lastPrice = newPrice;
-    }
-
-    // Crée ou met à jour le graphique Chart.js avec les cinq derniers points journaliers
-    function updateChart(dailyPoints) {
-      const labels = dailyPoints.map(p => {
-        const d = new Date(p.time);
-        return `${("0" + d.getDate()).slice(-2)}/${
-          ("0" + (d.getMonth() + 1)).slice(-2)
-        }`;
-      });
-      const dataValues = dailyPoints.map(p => p.value);
+    function updateChart(history) {
+      const ctx = document.getElementById("dyolarChart").getContext("2d");
+      const labels = history.map(p => p.time);
+      const values = history.map(p => p.value);
 
       if (chart) {
-        chart.destroy();
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = values;
+        chart.update();
+        return;
       }
-      const ctx = document.getElementById("dyolarChart").getContext("2d");
+
       chart = new Chart(ctx, {
         type: "line",
         data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Cours de clôture (5 derniers jours)",
-              data: dataValues,
-              borderColor: "gold",
-              backgroundColor: "rgba(255,215,0,0.15)",
-              borderWidth: 2,
-              pointRadius: 4,
-              pointBackgroundColor: "white",
-              tension: 0.25,
-              fill: true
-            }
-          ]
+          labels,
+          datasets: [{
+            label: "DYOLARS",
+            data: values,
+            borderColor: "gold",
+            backgroundColor: "rgba(255, 215, 0, 0.1)",
+            tension: 0.3
+          }]
         },
         options: {
-          responsive: true,
           scales: {
             x: {
-              display: true,
-              ticks: { color: "gold" },
-              grid: { color: "#444" }
+              ticks: { color: "#ccc" },
+              grid: { color: "#333" }
             },
             y: {
-              beginAtZero: false,
-              ticks: { color: "gold" },
+              ticks: { color: "#ccc" },
               grid: { color: "#444" }
             }
           },
           plugins: {
             legend: {
               labels: { color: "gold" }
-            },
-            tooltip: {
-              mode: "index",
-              intersect: false
             }
-          },
-          interaction: {
-            mode: "nearest",
-            intersect: false
           }
         }
       });
     }
 
-    // Envoie la saisie manuelle au Sheet via l’API
-    async function setManualPrice() {
-      const priceInput = document.getElementById("manualPrice");
-      const newPrice = parseFloat(priceInput.value);
-      const adminMsg = document.getElementById("adminMsg");
-
-      if (isNaN(newPrice) || newPrice <= 0) {
-        adminMsg.style.color = "crimson";
-        adminMsg.textContent = "Prix invalide : entrez un nombre > 0.";
-        return;
-      }
-
-      try {
-        const res = await fetch(API_URL + `?action=set&price=${newPrice}`);
-        const text = await res.text();
-        if (text.trim() === "OK") {
-          adminMsg.style.color = "lightgreen";
-          adminMsg.textContent = `Prix mis à jour à ${newPrice.toFixed(
-            2
-          )} UPP !`;
-          // Forcer une nouvelle récupération pour mettre à jour immédiatement
-          setTimeout(() => {
-            closeAdminPanel();
-            fetchPrice();
-          }, 1500);
-        } else {
-          adminMsg.style.color = "crimson";
-          adminMsg.textContent = "Erreur lors de l’enregistrement du prix.";
-          console.error("Erreur API :", text);
-        }
-      } catch (err) {
-        adminMsg.style.color = "crimson";
-        adminMsg.textContent = "Erreur réseau.";
-        console.error(err);
-      }
-    }
-
-    // Airdrop RP
-    function claimAirdrop() {
+    async function claimAirdrop() {
       const pseudo = document.getElementById("pseudo").value.trim();
       const msg = document.getElementById("claimMsg");
       if (!pseudo) {
-        msg.textContent = "Merci d’entrer ton pseudo de BRO.";
+        msg.textContent = "Merci d’entrer ton nom de BRO.";
         msg.style.color = "crimson";
         return;
       }
-      msg.textContent = `BRAVO ${pseudo.toUpperCase()}, 69 DYOLAR t'ont été offerts ! 🔥🔥🔥`;
-      msg.style.color = "lightgreen";
+      try {
+        const res = await fetch(API_URL + "?action=airdrop&pseudo=" + encodeURIComponent(pseudo));
+        const data = await res.json();
+        if (data && data.success) {
+          msg.textContent = "🎉 Tu as reçu 69 DYOLARS ! Gloire au D.";
+          msg.style.color = "lightgreen";
+        } else {
+          msg.textContent = data.message || "Erreur lors de la réclamation.";
+          msg.style.color = "crimson";
+        }
+      } catch (err) {
+        console.error(err);
+        msg.textContent = "Erreur réseau.";
+        msg.style.color = "crimson";
+      }
     }
 
-    // Détection du mot-clé secret "dyolisecret" pour afficher le panneau admin
-    const SECRET_CODE = "dyolisecret";
-    let typedKeys = "";
-
-    const adminPanel = document.getElementById("adminPanel");
-    const priceInput = document.getElementById("manualPrice");
-    const adminMsg = document.getElementById("adminMsg");
-
     document.addEventListener("keydown", e => {
-      typedKeys += e.key.toLowerCase();
-      if (typedKeys.length > SECRET_CODE.length) {
-        typedKeys = typedKeys.slice(-SECRET_CODE.length);
-      }
-      if (typedKeys === SECRET_CODE) {
-        toggleAdminPanel(true);
-        typedKeys = "";
+      if (e.key === "Enter" && e.target.tagName === "BODY") {
+        const code = prompt("Code secret ?");
+        if (code === "dyolisecret") {
+          document.getElementById("adminPanel").style.display = "block";
+        }
       }
     });
 
-    function toggleAdminPanel(show) {
-      adminPanel.style.display = show ? "block" : "none";
-      if (show) {
-        priceInput.focus();
-        adminMsg.textContent = "";
-      }
-    }
     function closeAdminPanel() {
-      toggleAdminPanel(false);
+      document.getElementById("adminPanel").style.display = "none";
     }
 
-    // Au chargement : afficher d’abord la dernière valeur connue (fallback)
-    if (lastPrice !== null) {
-      updateDisplayedPrice(lastPrice, yesterdayPrice);
+    async function setManualPrice() {
+      const val = parseFloat(document.getElementById("manualPrice").value);
+      const msg = document.getElementById("adminMsg");
+      if (isNaN(val) || val <= 0) {
+        msg.textContent = "Prix invalide.";
+        msg.style.color = "crimson";
+        return;
+      }
+      try {
+        const res = await fetch(API_URL + "?action=set&price=" + val);
+        const data = await res.json();
+        if (data && data.success) {
+          msg.textContent = "✔️ Prix mis à jour.";
+          msg.style.color = "lightgreen";
+          fetchPrice();
+        } else {
+          msg.textContent = "Erreur serveur.";
+          msg.style.color = "crimson";
+        }
+      } catch (err) {
+        console.error(err);
+        msg.textContent = "Erreur réseau.";
+        msg.style.color = "crimson";
+      }
     }
-    // Puis récupération depuis le Sheet et construction du graphique
-    fetchPrice();
-    // Actualisation toutes les minutes
-    setInterval(fetchPrice, 60 * 1000);
+
+    window.onload = fetchPrice;
   </script>
 </body>
 </html>
