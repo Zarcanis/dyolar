@@ -124,7 +124,7 @@
     <!-- Conteneur flex pour placer l’image à gauche, le prix au centre, l’image à droite -->
     <div class="price-container">
       <img
-        src="https://zupimages.net/up/25/22/hzod.png"
+        src="https://drive.google.com/uc?export=view&amp;id=1JXw1W6n-i0i9MWGMPZJGBwk9XcRLek9d"
         alt="Logo Dyolar Gauche"
       />
       <p class="price">
@@ -132,7 +132,7 @@
         <span class="change" id="dyochange"></span>
       </p>
       <img
-        src="https://zupimages.net/up/25/22/hzod.png"
+        src="https://drive.google.com/uc?export=view&amp;id=1JXw1W6n-i0i9MWGMPZJGBwk9XcRLek9d"
         alt="Logo Dyolar Droite"
       />
     </div>
@@ -176,17 +176,24 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // → Remplace par TON URL d’Apps Script déployé en Web App
+    // → Remplacez par VOTRE URL d’Apps Script déployé en Web App
     const API_URL =
       "https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec";
 
     let chart = null;
-    // On garde en mémoire la dernière valeur si réseau indisponible
+
+    // Dernier prix affiché (en fallback si offline)
     let lastPrice = localStorage.getItem("lastPrice")
       ? parseFloat(localStorage.getItem("lastPrice"))
       : null;
 
-    // Récupère les 100 dernières lignes du Sheet, puis extrait la clôture quotidienne
+    // Dernier cours journalier (clôture d'hier), en fallback
+    let yesterdayPrice = localStorage.getItem("yesterdayPrice")
+      ? parseFloat(localStorage.getItem("yesterdayPrice"))
+      : null;
+
+    // Récupère les 100 dernières lignes depuis le Sheet, calcule cours de clôture journaliers,
+    // met à jour le graphique & affiche le prix + % de variation
     async function fetchPrice() {
       try {
         const res = await fetch(API_URL + "?action=get&maxRows=100");
@@ -196,7 +203,7 @@
           return;
         }
 
-        // 1) Transformation : forcer le chiffre à utiliser un point (3,14 → "3.14")
+        // 1) Forcer le séparateur décimal en point (ex. "3,14" → "3.14")
         const allData = rawData
           .map(r => {
             let p = r.price;
@@ -208,14 +215,13 @@
               time: r.time
             };
           })
-          // 2) Tri chronologique croissant (au cas où)
+          // 2) Tri chronologique croissant (au cas où l'API renvoie dans le désordre)
           .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-        // 3) Calculer le cours de clôture de chaque jour (dernier prix enregistré par date)
+        // 3) Calculer le cours de clôture de chaque jour (dernier prix par date)
         const dailyMap = {};
         allData.forEach(pt => {
           const dateKey = new Date(pt.time).toISOString().split("T")[0];
-          // On ne garde que le dernier point de la date
           if (
             !dailyMap[dateKey] ||
             new Date(pt.time) > new Date(dailyMap[dateKey].time)
@@ -223,52 +229,59 @@
             dailyMap[dateKey] = pt;
           }
         });
-        // On convertit en array trié par date ascendante
+        // 4) Transformer en array trié par date ascendante
         const dailyArray = Object.values(dailyMap).sort(
           (a, b) => new Date(a.time) - new Date(b.time)
         );
 
-        // 4) Garde uniquement les 5 dernières dates pour le graphique
-        const last5Days = dailyArray.slice(Math.max(dailyArray.length - 5, 0));
+        // 5) Conserver les 5 derniers jours
+        const last5Days = dailyArray.slice(
+          Math.max(dailyArray.length - 5, 0)
+        );
 
-        // 5) Mettre à jour le graphique avec ces 5 « fermetures »
+        // 6) Mettre à jour le graphique avec ces 5 clôtures quotidiennes
         updateChart(last5Days);
 
-        // 6) Prendre le dernier prix (aujourd'hui ou date la plus récente)
+        // 7) Le prix “à l’instant T” est la clôture la plus récente
         const todayPrice = dailyArray[dailyArray.length - 1].value;
-        updateDisplayedPrice(todayPrice, dailyArray);
+        // Récupérer le cours de clôture d’hier (avant-dernier)
+        if (dailyArray.length >= 2) {
+          yesterdayPrice = dailyArray[dailyArray.length - 2].value;
+          localStorage.setItem(
+            "yesterdayPrice",
+            yesterdayPrice.toFixed(2)
+          );
+        }
 
-        // 7) Stocker localement pour fallback
+        // 8) Afficher le prix + % de variation
+        updateDisplayedPrice(todayPrice, yesterdayPrice);
+
+        // 9) Stocker dans localStorage pour fallback en cas d’erreur réseau
         localStorage.setItem("lastPrice", todayPrice.toFixed(2));
       } catch (err) {
         console.error("Erreur lors du fetchPrice :", err);
-        // Si réseau HS, afficher la valeur connue
+        // Si réseau HS, on affiche la dernière valeur connue + variation par rapport à yesterdayPrice fallback
         if (lastPrice !== null) {
-          updateDisplayedPrice(lastPrice, null);
+          updateDisplayedPrice(lastPrice, yesterdayPrice);
         }
       }
     }
 
-    // Mettre à jour l’affichage du prix et du % journaliers (+/–) vs clôture de la veille
-    // dailyArray = null si on n’a pas les données journalières (erreur réseau)
-    function updateDisplayedPrice(newPrice, dailyArray) {
+    // Met à jour l’affichage du prix et du % quotidien
+    // newPrice = prix à afficher, yPrice = clôture d’hier (ou null en fallback)
+    function updateDisplayedPrice(newPrice, yPrice) {
       const priceElem = document.getElementById("dyoprice");
       const changeElem = document.getElementById("dyochange");
-
       let variationText = "";
       let color = "gray";
 
-      if (Array.isArray(dailyArray) && dailyArray.length >= 2) {
-        // La veille correspond à l’avant-dernier
-        const yesterdayPrice = dailyArray[dailyArray.length - 2].value;
-        const pct = (
-          ((newPrice - yesterdayPrice) / yesterdayPrice) *
-          100
-        ).toFixed(2);
+      if (yPrice !== null) {
+        // Calculer % par rapport à yPrice
+        const pct = (((newPrice - yPrice) / yPrice) * 100).toFixed(2);
         variationText = (pct >= 0 ? "+" : "") + pct + "%";
         color = pct >= 0 ? "lightgreen" : "crimson";
       } else if (lastPrice !== null && lastPrice !== newPrice) {
-        // En fallback si dailyArray est null
+        // Fallback : comparer newPrice au dernierPrice
         const pct2 = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(2);
         variationText = (pct2 >= 0 ? "+" : "") + pct2 + "%";
         color = pct2 >= 0 ? "lightgreen" : "crimson";
@@ -280,14 +293,12 @@
       priceElem.textContent = newPrice.toFixed(2);
       changeElem.textContent = variationText;
       changeElem.style.color = color;
-
       lastPrice = newPrice;
     }
 
-    // Crée / met à jour le graphique Chart.js avec les cinq derniers points journaliers
+    // Crée ou met à jour le graphique Chart.js avec les cinq derniers points journaliers
     function updateChart(dailyPoints) {
       const labels = dailyPoints.map(p => {
-        // On affiche "JJ/MM" pour plus de clarté
         const d = new Date(p.time);
         return `${("0" + d.getDate()).slice(-2)}/${
           ("0" + (d.getMonth() + 1)).slice(-2)
@@ -428,9 +439,9 @@
       toggleAdminPanel(false);
     }
 
-    // Au chargement : on affiche d’abord la dernière valeur connue (fallback)
+    // Au chargement : afficher d’abord la dernière valeur connue (fallback)
     if (lastPrice !== null) {
-      updateDisplayedPrice(lastPrice, null);
+      updateDisplayedPrice(lastPrice, yesterdayPrice);
     }
     // Puis récupération depuis le Sheet et construction du graphique
     fetchPrice();
