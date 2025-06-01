@@ -110,7 +110,7 @@
   <div class="section">
     <h2>Cours actuel du $DYOLAR</h2>
     <p class="price">
-      1 DYOLAR = <span id="dyoprice">...</span> UPP*
+      1 DYOLAR = <span id="dyoprice">…</span> UPP *
       <span class="change" id="dyochange"></span>
     </p>
 
@@ -137,97 +137,125 @@
     *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
   </footer>
 
-  <!-- Panneau admin secret -->
+  <!-- Panneau admin secret "dyolisecret" -->
   <div id="adminPanel">
     <input type="number" id="manualPrice" step="0.01" min="0" placeholder="Nouveau cours DYOLAR" />
     <button onclick="setManualPrice()">Appliquer</button>
     <button class="close-btn" onclick="closeAdminPanel()">Fermer</button>
-    <p id="adminMsg" style="margin-top: 0.5em; color: lightgreen;"></p>
+    <p id="adminMsg" style="margin-top:0.5em; color:lightgreen;"></p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // → Adapte ici avec TON URL d'Apps Script
+    // → Remplace par TON URL d’Apps Script déployé en Web App
     const API_URL =
       "https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec";
 
     let chart = null;
-    // On tente de charger la dernière valeur connue en localStorage
-    let lastPrice = localStorage.getItem("lastPrice") ? parseFloat(localStorage.getItem("lastPrice")) : null;
+    // On garde en mémoire la dernière valeur si réseau indisponible
+    let lastPrice = localStorage.getItem("lastPrice")
+      ? parseFloat(localStorage.getItem("lastPrice"))
+      : null;
 
-    // Récupère les données du Google Sheet, trie, calcule variation, affiche graphique + prix
+    // Récupère les 100 dernières lignes du Sheet, puis extrait la clôture quotidienne
     async function fetchPrice() {
       try {
         const res = await fetch(API_URL + "?action=get&maxRows=100");
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) {
+        const rawData = await res.json();
+        if (!Array.isArray(rawData) || rawData.length === 0) {
           console.warn("Aucune donnée reçue de l'API");
           return;
         }
 
-        // On transforme les prix (remplacer virgule par point si nécessaire)
-        const chartData = data.map(row => {
-          // row.price peut être un nombre ou une chaîne "3,14"
-          let raw = row.price;
-          if (typeof raw === "string" && raw.includes(",")) {
-            raw = raw.replace(",", ".");
+        // 1) Transformation : forcer le chiffre à utiliser un point (3,14 → "3.14")
+        const allData = rawData.map(r => {
+          let p = r.price;
+          if (typeof p === "string" && p.includes(",")) {
+            p = p.replace(",", ".");
           }
           return {
-            value: parseFloat(raw),
-            time: row.time
+            value: parseFloat(p),
+            time: r.time
           };
         })
-        // On trie par date ascendante (au cas où)
+        // 2) Tri chronologique croissant (au cas où)
         .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-        // Filtrer les 5 derniers jours
-        const fiveDaysAgo = Date.now() - 5 * 24 * 60 * 60 * 1000;
-        const last5DaysData = chartData.filter(pt => new Date(pt.time).getTime() >= fiveDaysAgo);
+        // 3) On calcule ensuite le cours de clôture de chaque jour (dernier prix enregistré par date)
+        const dailyMap = {};
+        allData.forEach(pt => {
+          const dateKey = new Date(pt.time).toISOString().split("T")[0];
+          // On ne garde que le dernier point de la date
+          if (!dailyMap[dateKey] || new Date(pt.time) > new Date(dailyMap[dateKey].time)) {
+            dailyMap[dateKey] = pt;
+          }
+        });
+        // On convertit en array trié par date ascendante
+        const dailyArray = Object.values(dailyMap)
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-        // On construit le graphique uniquement sur ces derniers 5 jours
-        updateChart(last5DaysData);
+        // 4) Garde uniquement les 5 dernières dates pour le graphique
+        const last5Days = dailyArray.slice(Math.max(dailyArray.length - 5, 0));
 
-        // Déterminer le prix final (dernier point) et variation %
-        const lastPoint = chartData[chartData.length - 1].value;
-        updateDisplayedPrice(lastPoint);
+        // 5) On met à jour le graphique avec ces 5 « fermetures »
+        updateChart(last5Days);
 
-        // On stocke localement la valeur pour persister au rechargement
-        localStorage.setItem("lastPrice", lastPoint.toFixed(2));
+        // 6) On prend le dernier prix (aujourd'hui ou la date la plus récente)
+        const todayPrice = dailyArray[dailyArray.length - 1].value;
+        updateDisplayedPrice(todayPrice, dailyArray);
+
+        // 7) Stocke localement pour fallback
+        localStorage.setItem("lastPrice", todayPrice.toFixed(2));
 
       } catch (err) {
         console.error("Erreur lors du fetchPrice :", err);
-        // Si problème réseau, afficher simplement la dernière valeur connue
+        // Si réseau HS, on affiche la valeur connue
         if (lastPrice !== null) {
-          updateDisplayedPrice(lastPrice);
+          updateDisplayedPrice(lastPrice, null);
         }
       }
     }
 
-    // Met à jour le DOM du prix et de la variation % par rapport à la valeur précédente
-    function updateDisplayedPrice(newPrice) {
+    // Met à jour l'affichage du prix et du % journalier (+/–) par rapport à la dernière clôture
+    // dailyArray = null si on n’a pas les données journalières (en cas de fallback)
+    function updateDisplayedPrice(newPrice, dailyArray) {
       const priceElem = document.getElementById("dyoprice");
       const changeElem = document.getElementById("dyochange");
 
-      // Calcul de la variation par rapport à lastPrice
-      if (lastPrice !== null && lastPrice !== newPrice) {
-        const variation = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(2);
-        changeElem.textContent = (variation >= 0 ? "+" : "") + variation + "%";
-        changeElem.style.color = variation >= 0 ? "lightgreen" : "crimson";
+      let variationText = "";
+      let color = "gray";
+
+      if (Array.isArray(dailyArray) && dailyArray.length >= 2) {
+        // La veille est l'avant-dernier
+        const yesterdayPrice = dailyArray[dailyArray.length - 2].value;
+        const pct = (((newPrice - yesterdayPrice) / yesterdayPrice) * 100).toFixed(2);
+        variationText = (pct >= 0 ? "+" : "") + pct + "%";
+        color = pct >= 0 ? "lightgreen" : "crimson";
+      } else if (lastPrice !== null && lastPrice !== newPrice) {
+        // Si, faute de « dailyArray », on compare au dernier prix connu
+        const pct2 = (((newPrice - lastPrice) / lastPrice) * 100).toFixed(2);
+        variationText = (pct2 >= 0 ? "+" : "") + pct2 + "%";
+        color = pct2 >= 0 ? "lightgreen" : "crimson";
       } else if (lastPrice === newPrice) {
-        changeElem.textContent = "0.00%";
-        changeElem.style.color = "gray";
-      } else {
-        changeElem.textContent = "";
+        variationText = "0.00%";
+        color = "gray";
       }
 
       priceElem.textContent = newPrice.toFixed(2);
+      changeElem.textContent = variationText;
+      changeElem.style.color = color;
+
       lastPrice = newPrice;
     }
 
-    // Crée / met à jour le graphique Chart.js sur le canvas
-    function updateChart(dataPoints) {
-      const labels = dataPoints.map(p => new Date(p.time).toLocaleDateString() + " " + new Date(p.time).toLocaleTimeString());
-      const data = dataPoints.map(p => p.value);
+    // Crée ou mets à jour le graphique Chart.js avec les cinq derniers points journaliers
+    function updateChart(dailyPoints) {
+      const labels = dailyPoints.map(p => {
+        // On affiche "JJ/MM" pour plus de clarté
+        const d = new Date(p.time);
+        return `${("0"+d.getDate()).slice(-2)}/${("0"+(d.getMonth()+1)).slice(-2)}`;
+      });
+      const dataValues = dailyPoints.map(p => p.value);
 
       if (chart) {
         chart.destroy();
@@ -238,12 +266,12 @@
         data: {
           labels: labels,
           datasets: [{
-            label: "Cours du DYOLAR (5 jours)",
-            data: data,
+            label: "Cours de clôture (5 derniers jours)",
+            data: dataValues,
             borderColor: "gold",
             backgroundColor: "rgba(255,215,0,0.15)",
             borderWidth: 2,
-            pointRadius: 3,
+            pointRadius: 4,
             pointBackgroundColor: "white",
             tension: 0.25,
             fill: true
@@ -280,7 +308,7 @@
       });
     }
 
-    // Envoie la nouvelle valeur au Google Sheet via l'API Apps Script
+    // Envoie la saisie manuelle au Sheet
     async function setManualPrice() {
       const priceInput = document.getElementById("manualPrice");
       const newPrice = parseFloat(priceInput.value);
@@ -298,13 +326,11 @@
         if (text.trim() === "OK") {
           adminMsg.style.color = "lightgreen";
           adminMsg.textContent = `Prix mis à jour à ${newPrice.toFixed(2)} UPP !`;
-          updateDisplayedPrice(newPrice);
-          localStorage.setItem("lastPrice", newPrice.toFixed(2));
-          priceInput.value = "";
+          // On force une nouvelle récupération pour afficher immédiatement
           setTimeout(() => {
             closeAdminPanel();
-            fetchPrice(); // recharger depuis la feuille
-          }, 2000);
+            fetchPrice();
+          }, 1500);
         } else {
           adminMsg.style.color = "crimson";
           adminMsg.textContent = "Erreur lors de l’enregistrement du prix.";
@@ -330,7 +356,7 @@
       msg.style.color = "lightgreen";
     }
 
-    // Détection du mot-clé secret "dyolisecret" pour afficher le panneau admin
+    // Affichage de la barre admin au mot-clé « dyolisecret »
     const SECRET_CODE = "dyolisecret";
     let typedKeys = "";
 
@@ -338,7 +364,7 @@
     const priceInput = document.getElementById("manualPrice");
     const adminMsg = document.getElementById("adminMsg");
 
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", e => {
       typedKeys += e.key.toLowerCase();
       if (typedKeys.length > SECRET_CODE.length) {
         typedKeys = typedKeys.slice(-SECRET_CODE.length);
@@ -360,13 +386,13 @@
       toggleAdminPanel(false);
     }
 
-    // Au chargement, on essaie d’afficher la dernière valeur connue
+    // Au chargement, on affiche d’abord la dernière valeur connue (fallback)
     if (lastPrice !== null) {
-      updateDisplayedPrice(lastPrice);
+      updateDisplayedPrice(lastPrice, null);
     }
-    // Puis on lance la récupération depuis Google Sheet
+    // Puis on récupère les données de la feuille et on construit le graphique
     fetchPrice();
-    // On rafraîchit toutes les minutes
+    // Actualisation toutes les minutes
     setInterval(fetchPrice, 60 * 1000);
   </script>
 </body>
