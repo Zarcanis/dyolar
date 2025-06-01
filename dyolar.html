@@ -128,7 +128,7 @@
         alt="Logo Dyolar Gauche"
       />
       <p class="price">
-        1 DYOLAR = <span id="dyoprice">…</span> UPP *
+        1 DYOLAR = <span id="dyoprice">…</span> USD *
         <span class="change" id="dyochange"></span>
       </p>
       <img
@@ -157,7 +157,7 @@
   </div>
 
   <footer>
-    *Unités de Poulet-Pâtes — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
+    *Unités Saintes du DYOLISSIME — DYOLAR™ n'est pas une vraie crypto (encore) — Tout est bénédiction. Gloire au D. 🙏
   </footer>
 
   <!-- Panneau admin secret "dyolisecret" -->
@@ -372,7 +372,7 @@
         const text = await res.text();
         if (text.trim() === "OK") {
           adminMsg.style.color = "lightgreen";
-          adminMsg.textContent = `Prix mis à jour à ${newPrice.toFixed(2)} UPP !`;
+          adminMsg.textContent = `Prix mis à jour à ${newPrice.toFixed(2)} USD !`;
           setTimeout(() => {
             closeAdminPanel();
             fetchPrice();
