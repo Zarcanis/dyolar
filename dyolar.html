@@ -192,34 +192,44 @@
     <h2>🔥 Airdrop Sacré !</h2>
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
     <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <br /> <button onclick="claimAirdrop()">CLAIM TON AIRDROP</button>
+    <button onclick="claimAirdrop()">CLAIM TON AIRDROP</button>
+
+<div id="message" style="margin-top:10px; color: green;"></div>
 
 <script>
 function claimAirdrop() {
-  const pseudo = prompt("Ton nom de BRO");
-
+  const pseudo = prompt("Quel est ton pseudo ?");
   if (!pseudo) {
     alert("Tu dois entrer un pseudo !");
     return;
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec?action=airdrop&pseudo=" + encodeURIComponent(pseudo), {
-    method: "POST"
+  const params = new URLSearchParams();
+  params.append("action", "airdrop");
+  params.append("pseudo", pseudo);
+
+  fetch("https://script.google.com/macros/s/TON_URL/exec", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: params
   })
-    .then(r => r.json())
+    .then(response => response.json())
     .then(data => {
       if (data.status === "success") {
-        alert("✅ Airdrop enregistré !");
+        document.getElementById("message").textContent = "✅ Airdrop enregistré !";
       } else {
-        alert("❌ Erreur : " + data.message);
+        document.getElementById("message").textContent = "❌ Erreur : " + data.message;
       }
     })
     .catch(err => {
       console.error(err);
-      alert("⚠️ Une erreur est survenue");
+      document.getElementById("message").textContent = "⚠️ Une erreur est survenue";
     });
 }
 </script>
+
 
 
   </div>
