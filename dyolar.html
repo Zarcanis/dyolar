@@ -192,8 +192,7 @@
     <h2>🔥 Airdrop Sacré !</h2>
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
     <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <br />
-    <button onclick="claimAirdrop()">🎁 CLAIMER TON AIRDROP</button>
+    <br /> <button onclick="claimAirdrop()">CLAIM TON AIRDROP</button>
 
 <script>
 function claimAirdrop() {
@@ -204,7 +203,7 @@ function claimAirdrop() {
     return;
   }
 
-  fetch("https://script.google.com/macros/s/TON_URL/exec?action=airdrop&pseudo=" + encodeURIComponent(pseudo), {
+  fetch("https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec?action=airdrop&pseudo=" + encodeURIComponent(pseudo), {
     method: "POST"
   })
     .then(r => r.json())
@@ -217,10 +216,11 @@ function claimAirdrop() {
     })
     .catch(err => {
       console.error(err);
-      alert("❌ Une erreur est survenue");
+      alert("⚠️ Une erreur est survenue");
     });
 }
 </script>
+
 
   </div>
 
