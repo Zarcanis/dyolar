@@ -193,8 +193,35 @@
     <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
     <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
     <br />
-    <button class="btn" onclick="claimAirdrop()">CLAIMER TON AIRDROP</button>
-    <p id="claimMsg"></p>
+    <button onclick="claimAirdrop()">🎁 CLAIMER TON AIRDROP</button>
+
+<script>
+function claimAirdrop() {
+  const pseudo = prompt("Ton nom de BRO");
+
+  if (!pseudo) {
+    alert("Tu dois entrer un pseudo !");
+    return;
+  }
+
+  fetch("https://script.google.com/macros/s/TON_URL/exec?action=airdrop&pseudo=" + encodeURIComponent(pseudo), {
+    method: "POST"
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === "success") {
+        alert("✅ Airdrop enregistré !");
+      } else {
+        alert("❌ Erreur : " + data.message);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("❌ Une erreur est survenue");
+    });
+}
+</script>
+
   </div>
 
   <div class="apy-box">
