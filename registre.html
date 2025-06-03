@@ -95,7 +95,41 @@
 </head>
 <body>
   <h1>🧾 REGISTRE DES PORTFOLIOS - CHAÎNE DYOLARS</h1>
+ <style>
+  .registre-link {
+    position: absolute;
+    left: 50%rem;
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    color: #fefefe;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    z-index: 1000;
+  }
+.registre-container {
+  clear: both;
+  text-align: center;
+  margin-top: 1rem;
+  float: none;
+}
+  .registre-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+    color: #ffffff;
+  }
 
+  .registre-link::before {
+    content: "📜 ";
+  }
+</style>
+
+<a href="index.html" class="registre-link" target="_blank" title="Revenir au DYOLAR">
+  Revenir au cours du $DYOLAR
+</a>
   <div class="filters">
     <input type="text" id="filterBro" placeholder="🔍 Rechercher un BRO">
     <button onclick="sortByAmount()">📊 Trier par montant</button>
