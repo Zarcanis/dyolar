@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Registre des Portfolios</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #0f0f0f;
+      color: #00ffcc;
+      font-family: 'Share Tech Mono', monospace;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      color: #00ffee;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #00ffee;
+      padding-bottom: 1rem;
+    }
+    .portfolio-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .portfolio-table th, .portfolio-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #008888;
+    }
+    .portfolio-table th {
+      background-color: #101515;
+      color: #00ffee;
+    }
+    .portfolio-table td {
+      color: #00ffcc;
+    }
+    .address {
+      font-size: 0.9rem;
+      color: #00ccaa;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧾 REGISTRE DES PORTFOLIOS - CHAÎNE DYOL</h1>
+  <table class="portfolio-table" id="portfolioTable">
+    <thead>
+      <tr>
+        <th>PORTFOLIO ID</th>
+        <th>BRO</th>
+        <th>DYOLAR</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Données injectées ici automatiquement -->
+    </tbody>
+  </table>
+
+  <script>
+    async function fetchSheetData() {
+      const response = await fetch('https://opensheet.elk.sh/[ID]/portfoliosbruts');
+      const data = await response.json();
+      const table = document.querySelector('#portfolioTable tbody');
+
+      data.forEach((entry, index) => {
+        const tr = document.createElement('tr');
+
+        const wallet = '0x' + Math.random().toString(36).substring(2, 12).toUpperCase();
+
+        tr.innerHTML = `
+          <td>${wallet}</td>
+          <td>${entry.BRO}</td>
+          <td>${parseFloat(entry.montant).toFixed(2)} DYOLAR</td>
+        `;
+
+        table.appendChild(tr);
+      });
+    }
+
+    fetchSheetData();
+  </script>
+</body>
+</html>
