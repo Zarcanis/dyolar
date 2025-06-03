@@ -189,50 +189,64 @@
   </div>
 
   <div class="section airdrop">
-    <h2>🔥 Airdrop Sacré !</h2>
-    <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
-    <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
-    <button onclick="claimAirdrop()">CLAIM TON AIRDROP</button>
+  <h2>🔥 Airdrop Sacré !</h2>
+  <p>Réclame 69 DYOLARS offerts par le DYOLISSIME.</p>
+  <!-- Champ texte pour saisir directement le pseudo -->
+  <input type="text" id="pseudo" placeholder="Ton nom de BRO" />
+  <button class="btn" onclick="claimAirdrop()">CLAIM TON AIRDROP</button>
 
-<div id="message" style="margin-top:10px; color: green;"></div>
+  <!-- Ici on affiche le résultat (succès ou erreur) -->
+  <div id="message" style="margin-top:10px; color: lightgreen;"></div>
+</div>
 
 <script>
-function claimAirdrop() {
-  const pseudo = prompt("Quel est ton pseudo ?");
-  if (!pseudo) {
-    alert("Tu dois entrer un pseudo !");
-    return;
-  }
+  async function claimAirdrop() {
+    const pseudoInput = document.getElementById("pseudo");
+    const messageBox = document.getElementById("message");
+    const pseudo = pseudoInput.value.trim();
 
-  const params = new URLSearchParams();
-  params.append("action", "airdrop");
-  params.append("pseudo", pseudo);
+    if (!pseudo) {
+      // Si aucun pseudo n’a été saisi, on affiche une erreur
+      messageBox.style.color = "crimson";
+      messageBox.textContent = "Tu dois entrer un pseudo !";
+      return;
+    }
 
-  fetch("https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: params
-  })
-    .then(response => response.json())
-    .then(data => {
+    // Prépare les paramètres POST
+    const params = new URLSearchParams();
+    params.append("action", "airdrop");
+    params.append("pseudo", pseudo);
+
+    try {
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbzbUFh9K-9pPwoIXLcers7JneHKxOYbEpSgWAvPeUXGgHrbLRObklN41EfDHU5nXJdm/exec",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: params.toString()
+        }
+      );
+
+      const data = await response.json();
       if (data.status === "success") {
-        document.getElementById("message").textContent = "✅ Airdrop enregistré !";
+        messageBox.style.color = "lightgreen";
+        messageBox.textContent = "✅ Airdrop enregistré !";
+        // On peut vider le champ pseudo si on veut
+        pseudoInput.value = "";
       } else {
-        document.getElementById("message").textContent = "❌ Erreur : " + data.message;
+        messageBox.style.color = "crimson";
+        messageBox.textContent = "❌ Erreur : " + data.message;
       }
-    })
-    .catch(err => {
+    } catch (err) {
       console.error(err);
-      document.getElementById("message").textContent = "⚠️ Une erreur est survenue";
-    });
-}
+      messageBox.style.color = "crimson";
+      messageBox.textContent = "⚠️ Une erreur est survenue";
+    }
+  }
 </script>
-
-
-
-  </div>
+</div>
 
   <div class="apy-box">
   <h2>📡 DYOLAR Radio Yield</h2>
