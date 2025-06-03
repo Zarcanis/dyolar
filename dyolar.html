@@ -186,6 +186,37 @@
     <div class="chart-container">
       <canvas id="dyolarChart"></canvas>
     </div>
+    <style>
+  .registre-link {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    color: #fefefe;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    z-index: 1000;
+  }
+
+  .registre-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+    color: #ffffff;
+  }
+
+  .registre-link::before {
+    content: "📜 ";
+  }
+</style>
+
+<a href="registre.html" class="registre-link" target="_blank" title="Accéder au registre sacré">
+  Le Registre Sacré des BROS
+</a>
   </div>
 
   <div class="section airdrop">
