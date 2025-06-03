@@ -487,18 +487,7 @@ function claimAirdrop() {
       }
     }
 
-    // Airdrop RP
-    function claimAirdrop() {
-      const pseudo = document.getElementById("pseudo").value.trim();
-      const msg = document.getElementById("claimMsg");
-      if (!pseudo) {
-        msg.textContent = "Merci d’entrer ton pseudo de BRO.";
-        msg.style.color = "crimson";
-        return;
-      }
-      msg.textContent = `BRAVO ${pseudo.toUpperCase()}, 69 DYOLAR t'ont été offerts ! 🔥🔥🔥`;
-      msg.style.color = "lightgreen";
-    }
+    
 
     // Détection du mot-clé secret "dyolisecret" pour afficher le panneau admin
     const SECRET_CODE = "dyolisecret";
