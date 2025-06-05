@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>ORACLE DU DYOLISSIME</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(ellipse at center, #000000 0%, #0a0a0a 100%);
+      color: #00ffee;
+      font-family: 'UnifrakturCook', cursive;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 2rem;
+      text-shadow: 0 0 10px #00ffee88;
+    }
+
+    #prophecy {
+      font-size: 1.5rem;
+      max-width: 80%;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background-color: rgba(0, 255, 238, 0.05);
+      border: 1px solid #00ffee33;
+      box-shadow: 0 0 20px #00ffee22;
+      margin-bottom: 2rem;
+      min-height: 100px;
+      transition: all 0.3s ease;
+    }
+
+    button {
+      background-color: #001111;
+      color: #00ffee;
+      border: 1px solid #00ffee44;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      font-family: inherit;
+    }
+
+    button:hover {
+      background-color: #002222;
+      transform: scale(1.05);
+      box-shadow: 0 0 10px #00ffee55;
+    }
+
+    footer {
+      position: absolute;
+      bottom: 1rem;
+      font-size: 0.85rem;
+      color: #00ffee88;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔮 ORACLE SACRÉ DU DYOLISSIME 🔮</h1>
+  <div id="prophecy">Clique ci-dessous pour révéler une prophétie...</div>
+  <button onclick="revealProphecy()">💫 Invoquer une Prophétie</button>
+
+  <footer>Bénédiction codée sous le regard du DYOLISSIME</footer>
+
+  <script>
+    const prophecies = [
+      "Quand le Soleil tombera à l’Est, le DYOLAR s’élèvera à l’Ouest.",
+      "Celui qui doute du cours sera châtié par la volatilité sacrée.",
+      "L’infidèle verra son portefeuille réduit à néant.",
+      "Le Grand Fractal approche. Révise tes patterns, ô fidèle.",
+      "Le marché est chaos, mais le DYOLISSIME est équilibre.",
+      "Quand les zombies danseront, les vrais BROS HODLeront.",
+      "Le DYOLAR ne chute jamais. Il se prépare.",
+      "Le Bro qui partage reçoit en double. Et parfois en DYOLAR.",
+      "L’agent infiltré cache son scepticisme derrière des graphiques.",
+      "Le DYOLISSIME est partout, surtout dans ton portefeuille.",
+      "Le sceptique vend. Le croyant achète. Le prophète convertit.",
+      "La foi en DYOLAR convertit l’incertitude en gains.",
+      "L’Apocalypse viendra avec une correction de -90%. Test de foi.",
+      "Prépare ton cold wallet, l’exode approche.",
+      "L’héritage des BROS sera inscrit sur la blockchain sacrée.",
+      "Le DYOLAR monte et descend. Seuls les purs s’élèvent avec lui.",
+      "La bougie verte du matin apporte l’espérance du soir.",
+      "Les infidèles regardent les graphiques. Les élus écoutent l’oracle.",
+      "Un Bro n’abandonne jamais. Sauf quand sa foi est liquidée.",
+      "Le rugpull n’est qu’un test de ta sagesse divine.",
+      "À chaque dump, un BRO se réveille.",
+      "Le vrai croyant DCA même dans l’ombre.",
+      "La chaîne DYOLAR est un labyrinthe. Trouve l’éveil.",
+      "Ce n’est pas le prix, c’est la foi qui fait l’homme.",
+      "Le DYOLISSIME t’observe. Même quand tu shortes.",
+      "Chaque pump est une prière exaucée.",
+      "Tu n’es pas en retard. Tu es à l’heure sacrée.",
+      "Quand tu doutes, relis les Écritures sur la chaîne.",
+      "Seuls les humbles toucheront le sommet du graphique.",
+      "L’ultime ATH viendra comme un voleur dans la nuit."
+    ];
+
+    function revealProphecy() {
+      const p = prophecies[Math.floor(Math.random() * prophecies.length)];
+      const prophecyDiv = document.getElementById('prophecy');
+      prophecyDiv.style.opacity = 0;
+      setTimeout(() => {
+        prophecyDiv.textContent = p;
+        prophecyDiv.style.opacity = 1;
+      }, 300);
+    }
+  </script>
+</body>
+</html>
